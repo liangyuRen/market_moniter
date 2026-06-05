@@ -1,0 +1,151 @@
+# 告警规则定义
+# 所有阈值可调，enabled控制是否启用
+
+rules:
+  # ====== 价格涨跌告警 ======
+  - id: "price_surge"
+    name: "快速拉升"
+    type: "realtime"
+    category: "opportunity"
+    description: "涨幅超过阈值"
+    enabled: true
+    params:
+      change_pct: 5.0          # 涨超5%
+    priority: 7
+
+  - id: "price_drop"
+    name: "快速下跌"
+    type: "realtime"
+    category: "risk"
+    description: "跌幅超过阈值"
+    enabled: true
+    params:
+      change_pct: 5.0          # 跌超5%（阈值取绝对值）
+    priority: 8
+
+  - id: "limit_up"
+    name: "涨停"
+    type: "realtime"
+    category: "info"
+    description: "触及涨停"
+    enabled: true
+    params:
+      change_pct: 9.8          # 涨停（考虑误差）
+    priority: 5
+
+  - id: "limit_down"
+    name: "跌停"
+    type: "realtime"
+    category: "risk"
+    description: "触及跌停"
+    enabled: true
+    params:
+      change_pct: 9.8          # 跌停（阈值取绝对值）
+    priority: 10
+
+  # ====== 成交量异动 ======
+  - id: "volume_surge"
+    name: "放量异动"
+    type: "realtime"
+    category: "opportunity"
+    description: "成交量较5日均量大幅放大"
+    enabled: true
+    params:
+      volume_ratio: 2.0        # 量比>2
+      min_change_pct: 0        # 涨幅下限（防止放量下跌误报）
+    priority: 6
+
+  - id: "volume_surge_drop"
+    name: "放量下跌"
+    type: "realtime"
+    category: "risk"
+    description: "放量下跌，主力出货信号"
+    enabled: true
+    params:
+      volume_ratio: 1.5        # 量比>1.5
+      max_change_pct: -2.0     # 跌幅>2%
+    priority: 9
+
+  # ====== 冲高回落 ======
+  - id: "high_drop"
+    name: "冲高回落"
+    type: "realtime"
+    category: "risk"
+    description: "盘中冲高后大幅回落"
+    enabled: true
+    params:
+      high_rise: 5.0           # 最高涨超5%
+      drop_from_high: 3.0      # 从高点回落超3%
+    priority: 8
+
+  # ====== 技术指标告警 ======
+  - id: "macd_golden_cross"
+    name: "MACD金叉"
+    type: "daily"
+    category: "opportunity"
+    description: "MACD日线金叉"
+    enabled: false             # 需要历史数据，默认关闭
+    params: {}
+    priority: 4
+
+  - id: "macd_dead_cross"
+    name: "MACD死叉"
+    type: "daily"
+    category: "risk"
+    description: "MACD日线死叉"
+    enabled: false
+    params: {}
+    priority: 4
+
+  - id: "ma_breakout"
+    name: "均线突破"
+    type: "realtime"
+    category: "opportunity"
+    description: "股价突破重要均线"
+    enabled: false
+    params:
+      ma_periods: [20, 60]    # 突破的均线周期
+      breakout_pct: 1.0       # 突破幅度%
+    priority: 5
+
+  # ====== 资金流向 ======
+  - id: "main_inflow"
+    name: "主力资金流入"
+    type: "realtime"
+    category: "opportunity"
+    description: "主力资金大幅净流入"
+    enabled: true
+    params:
+      inflow_amount: 100000000 # 净流入超1亿
+    priority: 5
+
+  - id: "main_outflow"
+    name: "主力资金流出"
+    type: "realtime"
+    category: "risk"
+    description: "主力资金大幅净流出"
+    enabled: true
+    params:
+      outflow_amount: 100000000 # 净流出超1亿
+    priority: 6
+
+  # ====== 新闻驱动告警 ======
+  - id: "news_positive"
+    name: "行业利好"
+    type: "news"
+    category: "opportunity"
+    description: "出现重大利好消息"
+    enabled: true
+    params:
+      keywords: ["利好", "突破", "增长", "政策支持", "涨价"]
+    priority: 6
+
+  - id: "news_negative"
+    name: "行业利空"
+    type: "news"
+    category: "risk"
+    description: "出现重大利空消息"
+    enabled: true
+    params:
+      keywords: ["利空", "暴跌", "处罚", "调查", "制裁", "暴雷"]
+    priority: 8

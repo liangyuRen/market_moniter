@@ -1,0 +1,76 @@
+# 自动盯盘Agent 主配置文件
+
+# ====== 通知配置 ======
+notify:
+  feishu:
+    enabled: true
+    webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_URL"
+    # 飞书Webhook频率限制（条/分钟），默认20
+    rate_limit_per_minute: 15
+
+  email:
+    enabled: false
+    smtp_host: "smtp.qq.com"
+    smtp_port: 465
+    smtp_user: "your_email@qq.com"
+    smtp_password: "your_smtp_auth_code"
+    from_addr: "your_email@qq.com"
+    to_addrs:
+      - "your_email@qq.com"
+
+# ====== 调度配置 ======
+scheduler:
+  # 实时行情刷新间隔（秒），仅交易时段生效
+  realtime_interval: 10
+  # 新闻刷新间隔（秒）
+  news_interval: 300
+  # 盘前简报推送时间
+  pre_market_time: "09:15"
+  # 收盘总结推送时间
+  post_market_time: "15:10"
+  # 盘中告警降温时间（秒），同一股票同一类型告警最小间隔
+  alert_cooldown: 600
+
+# ====== 分析配置 ======
+analysis:
+  # 技术指标参数
+  ma_periods: [5, 10, 20, 60, 120, 250]
+  # 异动检测阈值
+  anomaly:
+    # 涨跌幅告警阈值（%）
+    price_change_warn: 5.0
+    price_change_critical: 8.0
+    # 量比告警阈值
+    volume_ratio_warn: 2.0
+    volume_ratio_critical: 3.0
+    # 冲高回落阈值
+    high_drop_threshold: 3.0
+    high_rise_first: 5.0
+
+# ====== 数据源配置 ======
+data_source:
+  # 主数据源：akshare (默认)
+  primary: "akshare"
+  # easyquotation用于实时行情（备用）
+  realtime_source: "easyquotation"
+  # 是否开启新闻采集
+  news_enabled: true
+  # 新闻源列表
+  news_sources:
+    - "cls_telegraph"        # 财联社电报
+    - "eastmoney_news"       # 东方财富要闻
+    - "sina_global"          # 新浪全球财经
+  # 国际新闻源
+  international_news: false  # 暂不开启，需要额外的API
+
+# ====== 日志配置 ======
+logging:
+  level: "INFO"              # DEBUG / INFO / WARNING / ERROR
+  file: "logs/agent.log"
+  max_size_mb: 50
+  backup_count: 5
+
+# ====== Web服务配置 ======
+web:
+  host: "0.0.0.0"
+  port: 8000

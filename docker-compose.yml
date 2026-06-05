@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  agent:
+    build: .
+    container_name: stock-monitor-agent
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+
+  # 可选：Redis缓存加速
+  redis:
+    image: redis:7-alpine
+    container_name: stock-monitor-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    profiles:
+      - with-redis

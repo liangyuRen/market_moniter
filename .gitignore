@@ -1,0 +1,23 @@
+# 数据文件
+data/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+
+# 配置文件（含敏感信息，不提交）
+config/settings.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -83,6 +83,7 @@ def realtime_monitor():
 
     if should_fetch_funds:
         codes = [item["code"].strip() for item in watchlist]
+        code_name = {item["code"].strip(): item.get("name", "") for item in watchlist}
         fund_flows = fetch_fund_flow_batch(codes)
         if fund_flows:
             state._last_fund_fetch = datetime.now()
@@ -92,7 +93,7 @@ def realtime_monitor():
                 for code, flow in fund_flows.items():
                     flow_records.append({
                         "code": code,
-                        "name": "",
+                        "name": code_name.get(code, ""),
                         "date": flow.get("date", today),
                         "main_net_inflow": flow.get("main_net_inflow", 0),
                         "main_net_inflow_pct": flow.get("main_net_inflow_pct", 0),

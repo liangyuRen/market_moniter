@@ -189,6 +189,14 @@ def create_app() -> FastAPI:
         news = state.get_news()
         return {"count": len(news), "news": news[:limit]}
 
+    @app.get("/api/sector-news")
+    async def api_sector_news():
+        from src.collector.news import fetch_sector_news
+        from src.config_loader import get_watchlist
+        watchlist = get_watchlist()
+        result = fetch_sector_news(watchlist, count=80)
+        return result
+
     # ---- 资金流向 ----
     @app.get("/api/fundflow")
     async def api_fundflow():
@@ -232,6 +240,36 @@ def create_app() -> FastAPI:
         if row:
             return {"summary": dict(row)}
         return {"summary": None}
+
+    # ---- K线数据 ----
+    @app.get("/api/kline/{code}")
+    async def api_kline(
+        code: str,
+        scale: int = Query(default=5, description="分钟间隔: 5/15/30/60"),
+        count: int = Query(default=48, le=200)
+    ):
+        from src.collector.market_data import fetch_minute_kline, fetch_stock_history
+        market = "SH" if code.startswith(("6", "688")) else "SZ"
+        # 分钟K线
+        minute_bars = fetch_minute_kline(code, market, scale, count)
+        # 日K线（用于MA计算和整体走势）
+        daily = fetch_stock_history(code, market, days=120)
+        daily_bars = []
+        if not daily.empty:
+            for idx, row in daily.iterrows():
+                daily_bars.append({
+                    "date": idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx),
+                    "open": round(float(row["开盘"]), 3),
+                    "high": round(float(row["最高"]), 3),
+                    "low": round(float(row["最低"]), 3),
+                    "close": round(float(row["收盘"]), 3),
+                    "volume": int(float(row["成交量"])),
+                })
+        return {
+            "code": code,
+            "minute_bars": minute_bars,
+            "daily_bars": daily_bars[-60:],  # 最近60个交易日
+        }
 
     # ---- 技术分析快照 ----
     @app.get("/api/technical/{code}")

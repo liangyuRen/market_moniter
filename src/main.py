@@ -130,8 +130,8 @@ def realtime_monitor():
 
 
 def news_collector():
-    """新闻采集：拉新闻 -> 情绪分析 -> 存储 -> 推送"""
-    from src.collector.news import fetch_all_news
+    """新闻采集：拉新闻 -> 板块分类 -> 情绪分析 -> 存储 -> 推送"""
+    from src.collector.news import fetch_all_news, fetch_sector_news
     from src.alerter.rules import evaluate_news_alerts
     from src.alerter.evaluator import process_alerts
     from src.storage.database import save_news_batch
@@ -144,6 +144,13 @@ def news_collector():
         return
     state.set_news(all_news)
     save_news_batch(all_news)
+
+    # 板块分类新闻（缓存到state供dashboard API使用）
+    try:
+        sector_data = fetch_sector_news(watchlist, count=80)
+        state._sector_news = sector_data
+    except Exception:
+        pass
 
     news_alerts = evaluate_news_alerts(all_news, watchlist)
     final_alerts = process_alerts(news_alerts)

@@ -19,6 +19,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 .header-left h1{font-size:15px;font-weight:700;color:var(--accent)}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
 .logo-dot.off{background:var(--red)}
+.index-bar{display:flex;gap:2px;flex:1;justify-content:center;padding:0 16px}
+.idx-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:3px;font-size:12px;font-variant-numeric:tabular-nums;background:rgba(255,255,255,0.04);white-space:nowrap}
+.idx-chip .idx-price{font-weight:700;color:var(--text-primary)}
+.idx-chip .idx-change{font-weight:600;font-size:11px}
 .header-right{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text-secondary)}
 .stat-item{display:flex;align-items:center;gap:4px}
 .stat-val{color:var(--text-primary);font-weight:600}
@@ -43,11 +47,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 
 .stock-row{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;transition:background .15s;border-bottom:1px solid rgba(37,43,54,0.5);cursor:pointer}
 .stock-row:hover{background:rgba(88,166,255,0.05)}
-.stock-row .code{width:54px;font-size:11px;color:var(--text-muted)}
-.stock-row .name{flex:2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
-.stock-row .price-col{flex:1;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-.stock-row .change-col{flex:1;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
-.stock-row .vol-col{width:46px;text-align:right;font-size:11px;color:var(--text-secondary)}
+.stock-row .code{width:50px;font-size:10px;color:var(--text-muted)}
+.stock-row .name{flex:2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.stock-row .price-col{width:60px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px}
+.stock-row .change-col{width:58px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:12px}
+.stock-row .extra-col{width:55px;text-align:right;font-size:10px;color:var(--text-muted)}
 .up{color:var(--red)} .down{color:var(--green)} .flat{color:var(--text-muted)}
 
 .alert-feed{flex:1;overflow-y:auto;padding:6px}
@@ -125,7 +129,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 <div class="header">
   <div class="header-left">
     <div class="logo-dot" id="logo-dot"></div>
-    <h1>盯盘终端 v0.2.0</h1>
+    <h1>盯盘终端 v0.3.0</h1>
+  </div>
+  <div class="index-bar" id="index-bar">
+    <span class="idx-chip" id="idx-sh">上证 --</span>
+    <span class="idx-chip" id="idx-sz">深证 --</span>
+    <span class="idx-chip" id="idx-cyb">创业板 --</span>
+    <span class="idx-chip" id="idx-kcb">科创50 --</span>
   </div>
   <div class="header-right">
     <span class="stat-item">📊 <span class="stat-val" id="hdr-up">0</span></span>
@@ -173,9 +183,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
     </div>
     <div id="stock-list" style="max-height:calc(100vh - 230px);overflow-y:auto"></div>
   </div>
-  <div class="panel panel-center">
-    <div class="section-title"><span>实时告警流</span></div>
-    <div class="alert-feed" id="alert-feed-mini"></div>
+  <div class="panel panel-center" id="center-panel">
+    <div class="section-title">
+      <span id="chart-title">实时告警流</span>
+      <span style="font-size:11px;color:var(--text-muted)" id="chart-stock-info"></span>
+    </div>
+    <div id="chart-container" style="flex:1;position:relative;min-height:0">
+      <canvas id="kline-canvas" style="width:100%;height:100%;display:none"></canvas>
+      <div class="alert-feed" id="alert-feed-mini" style="height:100%"></div>
+    </div>
   </div>
   <div class="panel panel-right">
     <div class="section-title"><span>新闻快讯</span><span class="section-count" id="news-count">0条</span></div>
@@ -357,12 +373,16 @@ function updateQuotes(data) {
     row.dataset.price = newPrice;
     const priceEl = row.querySelector('.price-col');
     const changeEl = row.querySelector('.change-col');
-    const volEl = row.querySelector('.vol-col');
-    if (priceEl) priceEl.textContent = '¥' + newPrice.toFixed(2);
+    const extraEls = row.querySelectorAll('.extra-col');
+    if (priceEl) priceEl.textContent = newPrice.toFixed(2);
     const cls = q.change_pct > 0 ? 'up' : q.change_pct < 0 ? 'down' : 'flat';
     const sign = q.change_pct > 0 ? '+' : '';
     if (changeEl) { changeEl.textContent = sign + q.change_pct.toFixed(2) + '%'; changeEl.className = 'change-col ' + cls; }
-    if (volEl && q.volume_ratio > 0) volEl.textContent = '量' + q.volume_ratio.toFixed(1);
+    if (extraEls.length >= 3) {
+      if (q.turnover > 0) extraEls[0].textContent = '换' + q.turnover.toFixed(1) + '%';
+      if (q.total_market_cap > 0) extraEls[1].textContent = (q.total_market_cap/1e8).toFixed(0) + '亿';
+      if (q.volume_ratio > 0) extraEls[2].textContent = '量' + q.volume_ratio.toFixed(1);
+    }
     if (oldPrice > 0 && newPrice !== oldPrice) {
       row.classList.remove('flash-up', 'flash-down');
       void row.offsetWidth;
@@ -436,7 +456,7 @@ document.querySelectorAll('.main-tabs .tab-btn').forEach(btn => {
 });
 
 function loadTabData(tab) {
-  if (tab === 'global') { loadGlobal(); }
+  if (tab === 'global') { loadGlobal(); loadSectorNews(); }
   else if (tab === 'funds') { loadFunds(); }
   else if (tab === 'signals') { loadSignals(); }
   else if (tab === 'backtest') { loadBacktestTab(); }
@@ -452,13 +472,17 @@ async function loadWatchlist() {
       const pct = s.change_pct || 0;
       const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
       const sign = pct > 0 ? '+' : '';
-      const delBtn = wlEditMode ? `<span style="color:var(--red);cursor:pointer;font-size:16px;padding-left:4px" onclick="event.stopPropagation();removeFromWatchlist('${s.code}')" title="移除">×</span>` : '';
-      return `<div class="stock-row" data-code="${s.code}" data-price="${s.price||0}" onclick="${wlEditMode ? '' : "loadTechnical('"+s.code+"','"+s.name+"')"}">
-        <span class="code">${s.code.substring(0,4)}</span>
+      const delBtn = wlEditMode ? `<span style="color:var(--red);cursor:pointer;font-size:16px;padding-left:2px" onclick="event.stopPropagation();removeFromWatchlist('${s.code}')" title="移除">×</span>` : '';
+      const turnover = s.turnover > 0 ? '换' + s.turnover.toFixed(1) + '%' : '';
+      const mcap = s.total_market_cap > 0 ? (s.total_market_cap/1e8).toFixed(0) + '亿' : '';
+      return `<div class="stock-row" data-code="${s.code}" data-price="${s.price||0}" onclick="${wlEditMode ? '' : "loadKlineChart('"+s.code+"','"+s.name+"');loadTechnical('"+s.code+"','"+s.name+"')"}">
+        <span class="code">${s.code.substring(2)}</span>
         <span class="name" title="${s.name}">${s.name}</span>
-        <span class="price-col">¥${(s.price||0).toFixed(2)}</span>
+        <span class="price-col">${(s.price||0).toFixed(2)}</span>
         <span class="change-col ${cls}">${sign}${pct.toFixed(2)}%</span>
-        <span class="vol-col">${s.volume_ratio > 1 ? '量'+s.volume_ratio.toFixed(1) : ''}${delBtn}</span>
+        <span class="extra-col" title="换手率">${turnover}</span>
+        <span class="extra-col" title="总市值">${mcap}</span>
+        <span class="extra-col" style="width:38px">${s.volume_ratio > 1 ? '量'+s.volume_ratio.toFixed(1) : ''}${delBtn}</span>
       </div>`;
     }).join('');
     document.getElementById('stock-list').innerHTML = html;
@@ -598,6 +622,215 @@ async function loadTechnical(code, name) {
       <div style="margin-top:8px;padding:8px"><b>信号:</b> ${signalsHtml}</div>`;
   } catch(e) { document.getElementById('technical-detail').innerHTML = '<div style="color:var(--red);padding:20px">加载失败</div>'; }
 }
+
+// ====== K-line Chart ======
+let klineData = null, klineCode = '', klineName = '';
+let klineHoverIdx = -1;
+
+async function loadKlineChart(code, name) {
+  klineCode = code; klineName = name;
+  document.getElementById('chart-title').textContent = name + ' K线图';
+  document.getElementById('alert-feed-mini').style.display = 'none';
+  const canvas = document.getElementById('kline-canvas');
+  canvas.style.display = 'block';
+  document.getElementById('chart-stock-info').textContent = code + ' · 加载中...';
+  try {
+    const r = await (await fetch(API+'/kline/'+code+'?scale=5&count=60')).json();
+    klineData = r;
+    drawKline();
+    document.getElementById('chart-stock-info').textContent = code + ' · ' + r.daily_bars.length + '日日K + ' + r.minute_bars.length + '条分时';
+  } catch(e) {
+    document.getElementById('chart-stock-info').textContent = code + ' · 加载失败';
+  }
+}
+
+function drawKline() {
+  const canvas = document.getElementById('kline-canvas');
+  const container = canvas.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  if (w === 0 || h === 0) return;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const bars = klineData.daily_bars || [];
+  const mBars = klineData.minute_bars || [];
+  const allBars = bars.length > 0 ? bars : mBars;
+  if (allBars.length < 2) return;
+
+  // Layout
+  const pad = { top: 15, right: 50, bottom: 20, left: 10 };
+  const volRatio = 0.22;
+  const chartH = h - pad.top - pad.bottom;
+  const priceH = chartH * (1 - volRatio);
+  const volH = chartH * volRatio;
+  const chartW = w - pad.left - pad.right;
+
+  // Price range
+  let high = -Infinity, low = Infinity, maxVol = 0;
+  for (const b of allBars) {
+    if (b.high > high) high = b.high;
+    if (b.low < low) low = b.low;
+    if (b.volume > maxVol) maxVol = b.volume;
+  }
+  const priceRange = high - low || 1;
+  const yScale = priceH / priceRange;
+  const vScale = volH / (maxVol || 1);
+
+  // Helper functions
+  const xPos = (i) => pad.left + (i / (allBars.length - 1)) * chartW;
+  const yPos = (p) => pad.top + (high - p) * yScale;
+
+  // Clear
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(48,54,61,0.4)';
+  ctx.lineWidth = 0.5;
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.top + (priceH / gridLines) * i;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+    // Price label
+    const p = high - (priceRange / gridLines) * i;
+    ctx.fillStyle = '#7d8590';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(p.toFixed(2), w - 2, y + 3);
+  }
+
+  // MA lines
+  const mas = [5, 10, 20];
+  const maColors = ['#e6edf3', '#e3b341', '#bc8cff'];
+  for (let mi = 0; mi < mas.length; mi++) {
+    const period = mas[mi];
+    if (allBars.length < period) continue;
+    ctx.strokeStyle = maColors[mi];
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    let started = false;
+    for (let i = period - 1; i < allBars.length; i++) {
+      let sum = 0;
+      for (let j = i - period + 1; j <= i; j++) sum += allBars[j].close;
+      const ma = sum / period;
+      const x = xPos(i);
+      const y = yPos(ma);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Candlesticks
+  const barW = Math.max(1, (chartW / allBars.length) * 0.7);
+  const wickW = 1;
+  for (let i = 0; i < allBars.length; i++) {
+    const b = allBars[i];
+    const isUp = b.close >= b.open;
+    const color = isUp ? '#ff6b63' : '#56d364';
+    const x = xPos(i);
+    const openY = yPos(b.open);
+    const closeY = yPos(b.close);
+    const highY = yPos(b.high);
+    const lowY = yPos(b.low);
+
+    // Wick
+    ctx.strokeStyle = color;
+    ctx.lineWidth = wickW;
+    ctx.beginPath();
+    ctx.moveTo(x, highY);
+    ctx.lineTo(x, lowY);
+    ctx.stroke();
+
+    // Body
+    const bodyTop = Math.min(openY, closeY);
+    const bodyH = Math.max(1, Math.abs(closeY - openY));
+    ctx.fillStyle = isUp ? '#ff6b63' : (b.open === b.close ? '#7d8590' : '#56d364');
+    ctx.fillRect(x - barW / 2, bodyTop, barW, bodyH);
+    if (!isUp && b.open === b.close) {
+      ctx.strokeStyle = '#7d8590';
+      ctx.strokeRect(x - barW / 2, bodyTop, barW, bodyH);
+    }
+
+    // Volume bar
+    const vx = x;
+    const vy = pad.top + priceH + 2;
+    const vh = b.volume * vScale;
+    ctx.fillStyle = isUp ? 'rgba(255,107,99,0.5)' : 'rgba(86,211,100,0.5)';
+    ctx.fillRect(vx - barW / 2, vy + volH - vh, barW, Math.max(1, vh));
+  }
+
+  // Volume label
+  ctx.fillStyle = '#7d8590';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('VOL', pad.left + 2, pad.top + priceH + 10);
+
+  // Hover crosshair
+  if (klineHoverIdx >= 0 && klineHoverIdx < allBars.length) {
+    const b = allBars[klineHoverIdx];
+    const x = xPos(klineHoverIdx);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, pad.top);
+    ctx.lineTo(x, pad.top + priceH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Tooltip
+    const dateStr = b.date || b.time || '';
+    const tipText = `${dateStr.substring(0,10)} | O:${b.open.toFixed(2)} H:${b.high.toFixed(2)} L:${b.low.toFixed(2)} C:${b.close.toFixed(2)} | VOL:${(b.volume||0).toLocaleString()}`;
+    ctx.font = '11px monospace';
+    const tw = ctx.measureText(tipText).width + 12;
+    const tx = Math.min(x - tw / 2, w - tw - 5);
+    const ty = pad.top + 2;
+    ctx.fillStyle = 'rgba(13,17,23,0.9)';
+    ctx.fillRect(Math.max(0, tx), ty, tw, 20);
+    ctx.fillStyle = '#e6edf3';
+    ctx.textAlign = 'left';
+    ctx.fillText(tipText, Math.max(2, tx + 6), ty + 14);
+  }
+}
+
+// Mouse events for K-line
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('kline-canvas');
+  canvas.addEventListener('mousemove', (e) => {
+    if (!klineData) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const bars = klineData.daily_bars || klineData.minute_bars || [];
+    if (bars.length < 2) return;
+    const chartW = rect.width - 60;
+    const idx = Math.round((mx - 10) / chartW * (bars.length - 1));
+    const newIdx = Math.max(0, Math.min(bars.length - 1, idx));
+    if (newIdx !== klineHoverIdx) {
+      klineHoverIdx = newIdx;
+      drawKline();
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    klineHoverIdx = -1;
+    drawKline();
+  });
+  // Resize
+  new ResizeObserver(() => {
+    if (klineData && document.getElementById('kline-canvas').style.display !== 'none') {
+      drawKline();
+    }
+  }).observe(canvas.parentElement);
+});
 
 async function loadSummary() {
   try {
@@ -827,15 +1060,72 @@ function displayBacktestResult(bt) {
   }
 }
 
+// ====== Index Bar ======
+async function loadIndices() {
+  try {
+    const r = await (await fetch(API+'/quotes')).json();
+    const quotes = r.quotes || {};
+    const idxMap = {'000001':'idx-sh','399001':'idx-sz','399006':'idx-cyb','000688':'idx-kcb'};
+    const idxNames = {'000001':'上证','399001':'深证','399006':'创业板','000688':'科创50'};
+    for (const [code, elId] of Object.entries(idxMap)) {
+      const q = quotes[code];
+      const el = document.getElementById(elId);
+      if (!el) continue;
+      if (q && q.price > 0) {
+        const pct = q.change_pct || 0;
+        const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : '';
+        const sign = pct > 0 ? '+' : '';
+        el.innerHTML = `<span style="font-size:10px;color:var(--text-muted)">${idxNames[code]}</span> <span class="idx-price">${q.price.toFixed(2)}</span> <span class="idx-change ${cls}">${sign}${pct.toFixed(2)}%</span>`;
+      }
+    }
+  } catch(e) {}
+}
+
+// ====== Sector News ======
+let sectorNewsData = null;
+async function loadSectorNews() {
+  try {
+    const r = await (await fetch(API+'/sector-news')).json();
+    sectorNewsData = r;
+    // Show in 全球 tab if visible
+    renderSectorNews();
+  } catch(e) {}
+}
+function renderSectorNews() {
+  const data = sectorNewsData;
+  if (!data) return;
+  let html = '';
+  const sectorNews = data.sector_news || {};
+  for (const [sector, items] of Object.entries(sectorNews)) {
+    if (!items.length) continue;
+    html += `<div style="font-size:11px;color:var(--text-muted);padding:4px 8px;font-weight:600">${sector} (${items.length}条)</div>`;
+    items.slice(0, 5).forEach(n => {
+      html += `<div class="news-item" style="font-size:11px">${(n.title||'').substring(0,100)}<div class="news-source">${n.source||''} · ${(n.pub_time||'').substring(0,16)}</div></div>`;
+    });
+  }
+  const watchRelated = data.watchlist_related || [];
+  const relHtml = watchRelated.length === 0
+    ? '<div style="padding:10px;color:var(--text-muted);font-size:11px">暂无自选股相关新闻</div>'
+    : watchRelated.map(n => `<div class="news-item" style="font-size:11px;border-left:2px solid var(--accent)">
+      <b style="color:var(--accent)">${n.sector||''}</b> ${(n.title||'').substring(0,120)}
+      ${n.matched_stocks&&n.matched_stocks.length>0 ? '<div style="font-size:10px;color:var(--accent);margin-top:2px">相关: '+n.matched_stocks.join(', ')+'</div>' : ''}
+    </div>`).join('');
+  document.getElementById('global-news').innerHTML = html || '暂无板块新闻';
+  document.getElementById('impact-analysis').innerHTML = `
+    <div class="section-title"><span>🔗 自选股相关 (${watchRelated.length}条)</span></div>
+    ${relHtml}`;
+}
+
 // ====== Init ======
 async function init() {
   await loadWatchlist();
   await loadAlerts();
   await loadNews();
   await loadStatus();
+  await loadIndices();
   connectWS();
   if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-  setInterval(async () => { await loadNews(); await loadStatus(); }, 15000);
+  setInterval(async () => { await loadNews(); await loadStatus(); await loadIndices(); }, 30000);
 }
 
 init();

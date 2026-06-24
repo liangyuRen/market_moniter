@@ -436,6 +436,31 @@ def fetch_fund_flow_batch(codes: list[str]) -> dict[str, dict]:
     return flows
 
 
+def fetch_minute_kline(code: str, market: str = "SH", scale: int = 5, count: int = 48) -> list[dict]:
+    """获取分钟级K线数据（Sina源，scale=5/15/30/60）"""
+    try:
+        s_code = _to_sina_code(code, market)
+        url = f"https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol={s_code}&scale={scale}&ma=no&datalen={count}"
+        resp = requests.get(url, headers=SINA_HEADERS, timeout=10)
+        data = resp.json()
+        if not data:
+            return []
+        bars = []
+        for d in data:
+            bars.append({
+                "time": d["day"],
+                "open": float(d["open"]),
+                "high": float(d["high"]),
+                "low": float(d["low"]),
+                "close": float(d["close"]),
+                "volume": int(float(d["volume"])),
+            })
+        return bars
+    except Exception as e:
+        logger.error(f"获取{code}分钟K线失败: {e}")
+        return []
+
+
 def fetch_market_overview() -> dict:
     """获取全市场总览 — 东方财富源"""
     try:

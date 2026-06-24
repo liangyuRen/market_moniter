@@ -181,7 +181,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
         <div class="stat-box"><div class="val" id="st-flat" style="color:var(--text-muted)">0</div><div class="lbl">平盘</div></div>
       </div>
     </div>
-    <div id="stock-list" style="max-height:calc(100vh - 230px);overflow-y:auto"></div>
+    <div style="display:flex;padding:3px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+      <span style="width:50px">代码</span>
+      <span style="flex:2">名称</span>
+      <span style="width:60px;text-align:right">现价</span>
+      <span style="width:58px;text-align:right">涨跌幅</span>
+      <span style="width:55px;text-align:right">换手</span>
+      <span style="width:55px;text-align:right">市值</span>
+      <span style="width:38px;text-align:right">量比</span>
+    </div>
+    <div id="stock-list" style="max-height:calc(100vh - 260px);overflow-y:auto"></div>
   </div>
   <div class="panel panel-center" id="center-panel">
     <div class="section-title">
@@ -241,6 +250,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
   <div class="panel panel-center">
     <div class="section-title"><span>🏭 行业板块异动</span></div>
     <div id="sector-list" style="max-height:calc(100vh - 140px);overflow-y:auto">加载中...</div>
+    <div class="section-title" style="margin-top:8px"><span>🗂 板块热度</span></div>
+    <div id="sector-heatmap" style="display:flex;flex-wrap:wrap;gap:4px;padding:6px;max-height:180px;overflow-y:auto"></div>
   </div>
   <div class="panel panel-right">
     <div class="section-title"><span>📈 北向资金</span></div>
@@ -566,17 +577,52 @@ async function loadFunds() {
   try {
     const r = await (await fetch(API+'/fundflow')).json();
     const flows = r.flows || [];
-    const html = flows.length > 0 ? flows.map(f => {
-      const cls = f.main_net_inflow > 0 ? 'up' : 'down';
-      const sign = f.main_net_inflow > 0 ? '+' : '';
-      return `<div class="fund-row">
-        <span>${f.name||f.code}</span>
-        <span>主力净流入</span>
-        <span class="${cls}">${sign}${(f.main_net_inflow/1e8).toFixed(2)}亿</span>
-        <span>${sign}${(f.main_net_inflow_pct||0).toFixed(2)}%</span>
+    if (!flows.length) {
+      document.getElementById('fund-flow-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无资金流向数据</div>';
+      return;
+    }
+    // Header
+    let html = `<div style="display:flex;padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+      <span style="width:70px">股票</span><span style="flex:1;text-align:right">主力净流入</span><span style="width:55px;text-align:right">占比</span><span style="width:55px;text-align:right">超大单</span>
+    </div>`;
+    const maxFlow = Math.max(...flows.map(f => Math.abs(f.main_net_inflow || 0)), 1);
+    flows.forEach(f => {
+      const flow = f.main_net_inflow || 0;
+      const pct = f.main_net_inflow_pct || 0;
+      const superFlow = f.super_large_net_inflow || 0;
+      const isPositive = flow > 0;
+      const cls = isPositive ? 'up' : 'down';
+      const sign = isPositive ? '+' : '';
+      const barW = Math.min(100, Math.abs(flow) / maxFlow * 100);
+      const barColor = isPositive ? 'rgba(255,107,99,0.6)' : 'rgba(86,211,100,0.6)';
+      html += `<div class="fund-row" style="display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:12px;gap:4px">
+        <span style="width:70px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name||f.code}</span>
+        <span style="flex:1;position:relative;height:16px;text-align:right;line-height:16px;font-variant-numeric:tabular-nums;z-index:1;padding-right:4px">
+          <span style="position:absolute;right:0;top:0;bottom:0;background:${barColor};width:${barW}%;border-radius:2px;z-index:-1"></span>
+          <span class="${cls}" style="font-weight:600">${sign}${(flow/1e8).toFixed(2)}亿</span>
+        </span>
+        <span class="${cls}" style="width:55px;text-align:right;font-weight:600">${sign}${pct.toFixed(2)}%</span>
+        <span class="${superFlow > 0 ? 'up' : 'down'}" style="width:55px;text-align:right;font-size:10px">${superFlow>0?'+':''}${(superFlow/1e8).toFixed(2)}亿</span>
       </div>`;
-    }).join('') : '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无资金流向数据</div>';
+    });
     document.getElementById('fund-flow-list').innerHTML = html;
+  } catch(e) {}
+  // Sector heatmap
+  try {
+    const r = await (await fetch(API+'/sector-news')).json();
+    const bySector = r.by_sector || {};
+    const sectors = Object.entries(bySector).sort((a,b) => b[1]-a[1]);
+    const maxCount = Math.max(...sectors.map(s=>s[1]), 1);
+    const heatColors = ['rgba(86,211,100,0.15)','rgba(86,211,100,0.3)','rgba(227,179,65,0.3)','rgba(255,107,99,0.3)','rgba(255,107,99,0.5)'];
+    const html2 = sectors.map(([name, count]) => {
+      const intensity = Math.min(4, Math.floor(count / maxCount * 5));
+      const bg = heatColors[intensity];
+      return `<div style="background:${bg};padding:4px 8px;border-radius:3px;font-size:11px;text-align:center;min-width:50px">
+        <div style="font-weight:600;color:var(--text-primary)">${name}</div>
+        <div style="font-size:10px;color:var(--text-secondary)">${count}条</div>
+      </div>`;
+    }).join('');
+    document.getElementById('sector-heatmap').innerHTML = html2 || '<span style="font-size:11px;color:var(--text-muted)">暂无数据</span>';
   } catch(e) {}
 }
 
@@ -584,16 +630,26 @@ async function loadSignals() {
   try {
     const r = await (await fetch(API+'/signals')).json();
     const signals = r.signals || [];
-    const html = signals.length > 0 ? signals.map(s => {
-      const badge = s.signal_type === 'buy' ? '<span class="badge badge-buy">买入</span>' :
-                    s.signal_type === 'sell' ? '<span class="badge badge-sell">卖出</span>' :
-                    '<span class="badge badge-info">持有</span>';
-      return `<div class="signal-row">
-        <div class="sig-title">${badge} ${s.stock_name||s.stock_code} · ${s.strategy}</div>
-        <div class="sig-reason">${s.reason||''} · ¥${(s.price||0).toFixed(2)}</div>
-        <div class="sig-meta">${(s.signal_at||'').substring(0,16)} · 强度: ${s.strength||'medium'}</div>
+    if (!signals.length) {
+      document.getElementById('signals-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无策略信号<br><small>交易时段自动分析技术指标</small></div>';
+      return;
+    }
+    let html = `<div style="display:flex;padding:4px 8px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+      <span style="width:44px">方向</span><span style="width:64px">股票</span><span style="flex:1">策略/原因</span><span style="width:40px;text-align:right">强度</span><span style="width:52px;text-align:right">价格</span>
+    </div>`;
+    const strengthColors = {strong:'var(--red)',medium:'var(--orange)',weak:'var(--text-muted)'};
+    signals.forEach(s => {
+      const isBuy = s.signal_type === 'buy';
+      const typeLabel = isBuy ? '买入' : s.signal_type === 'sell' ? '卖出' : '持有';
+      const typeCls = isBuy ? 'up' : s.signal_type === 'sell' ? 'down' : '';
+      html += `<div class="signal-row" style="display:flex;align-items:center;padding:5px 8px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:11px;gap:2px">
+        <span class="${typeCls}" style="width:44px;font-weight:700">${typeLabel}</span>
+        <span style="width:64px;font-weight:600">${(s.stock_name||s.stock_code).substring(0,5)}</span>
+        <span style="flex:1">${s.strategy||''}<br><span style="font-size:10px;color:var(--text-muted)">${(s.reason||'').substring(0,40)}</span></span>
+        <span style="width:40px;text-align:right;font-weight:600;color:${strengthColors[s.strength]||strengthColors.medium}">${s.strength||'medium'}</span>
+        <span style="width:52px;text-align:right;font-variant-numeric:tabular-nums">¥${(s.price||0).toFixed(2)}</span>
       </div>`;
-    }).join('') : '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无策略信号<br><small>交易时段自动分析技术指标</small></div>';
+    });
     document.getElementById('signals-list').innerHTML = html;
   } catch(e) {}
 }
@@ -958,21 +1014,56 @@ async function loadBacktestTab() {
   await loadBacktestHistory();
 }
 
-async function loadBacktestHistory() {
+let btSortKey = 'backtest_date', btSortDir = -1;
+function sortBacktestResults(key) {
+  if (btSortKey === key) btSortDir *= -1;
+  else { btSortKey = key; btSortDir = -1; }
+  loadBacktestHistory();
+}
+
+async function loadBacktestHistory(filterCode) {
   try {
-    const r = await (await fetch(API+'/backtest/results?limit=10')).json();
-    const results = r.results || [];
-    const html = results.length === 0
-      ? '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无回测记录</div>'
-      : results.map(r => {
-        const cls = r.total_return > 0 ? 'up' : 'down';
-        const sign = r.total_return > 0 ? '+' : '';
-        return `<div style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:11px;cursor:pointer" onclick="loadBacktestResult('${r.code}','${r.strategy}','${r.backtest_date}')">
-          <div><b>${r.code}</b> · ${r.strategy} <span style="color:var(--text-muted)">${r.backtest_date}</span></div>
-          <div>收益: <span class="${cls}">${sign}${r.total_return}%</span> · 胜率: ${r.win_rate}% · 最大回撤: ${r.max_drawdown}%</div>
-        </div>`;
-      }).join('');
-    document.getElementById('bt-history').innerHTML = html;
+    const qs = filterCode ? ('?code=' + filterCode + '&limit=20') : '?limit=20';
+    const r = await (await fetch(API+'/backtest/results'+qs)).json();
+    let results = r.results || [];
+    // Sort
+    results.sort((a, b) => {
+      const va = a[btSortKey] || 0, vb = b[btSortKey] || 0;
+      return (va > vb ? 1 : va < vb ? -1 : 0) * btSortDir;
+    });
+    if (!results.length) {
+      document.getElementById('bt-history').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无回测记录</div>';
+      return;
+    }
+    const sortArrow = (k) => btSortKey === k ? (btSortDir > 0 ? ' ↑' : ' ↓') : '';
+    let html = `<div style="font-size:10px;color:var(--text-muted);display:flex;padding:3px 6px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+      <span style="width:62px;cursor:pointer" onclick="sortBacktestResults('code')">代码${sortArrow('code')}</span>
+      <span style="width:70px;cursor:pointer" onclick="sortBacktestResults('strategy')">策略${sortArrow('strategy')}</span>
+      <span style="flex:1;text-align:right;cursor:pointer" onclick="sortBacktestResults('total_return')">收益${sortArrow('total_return')}</span>
+      <span style="width:40px;text-align:right;cursor:pointer" onclick="sortBacktestResults('win_rate')">胜率${sortArrow('win_rate')}</span>
+      <span style="width:48px;text-align:right;cursor:pointer" onclick="sortBacktestResults('max_drawdown')">回撤${sortArrow('max_drawdown')}</span>
+    </div>`;
+    results.forEach(r => {
+      const cls = r.total_return > 0 ? 'up' : 'down';
+      const sign = r.total_return > 0 ? '+' : '';
+      const sname = r.strategy ? r.strategy.replace('_',' ') : '';
+      html += `<div style="display:flex;padding:4px 6px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:11px;cursor:pointer;align-items:center" onclick="loadBacktestResult('${r.code}','${r.strategy}','${r.backtest_date}')">
+        <span style="width:62px;font-weight:600">${r.code}</span>
+        <span style="width:70px;font-size:10px;color:var(--text-muted)">${sname}</span>
+        <span class="${cls}" style="flex:1;text-align:right;font-weight:700">${sign}${r.total_return}%</span>
+        <span style="width:40px;text-align:right;color:${r.win_rate>=50?'var(--red)':'var(--green)'}">${r.win_rate}%</span>
+        <span style="width:48px;text-align:right;color:var(--text-muted)">${r.max_drawdown}%</span>
+      </div>`;
+    });
+    // Filter by stock
+    const codes = [...new Set((r.results||[]).map(r => r.code))];
+    let filterHtml = '<div style="padding:4px 6px;font-size:10px;display:flex;gap:4px;flex-wrap:wrap">';
+    filterHtml += `<span style="cursor:pointer;color:${filterCode?'var(--text-muted)':'var(--accent)}" onclick="loadBacktestHistory()">全部</span>`;
+    codes.forEach(c => {
+      filterHtml += `<span style="cursor:pointer;color:${filterCode===c?'var(--accent)':'var(--text-muted)}" onclick="loadBacktestHistory('${c}')">${c}</span>`;
+    });
+    filterHtml += '</div>';
+    document.getElementById('bt-history').innerHTML = filterHtml + html;
   } catch(e) {}
 }
 

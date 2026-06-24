@@ -1,111 +1,64 @@
-# 自选股监控列表
-# 可按个人关注修改
-
 stocks:
-  # ====== 蓝筹白马 ======
-  - code: "600519"
-    market: "SH"
-    name: "贵州茅台"
-    category: "蓝筹"
-    alert_enabled: true
-
-  - code: "000858"
-    market: "SZ"
-    name: "五粮液"
-    category: "蓝筹"
-    alert_enabled: true
-
-  - code: "601318"
-    market: "SH"
-    name: "中国平安"
-    category: "蓝筹"
-    alert_enabled: true
-
-  - code: "600036"
-    market: "SH"
-    name: "招商银行"
-    category: "蓝筹"
-    alert_enabled: true
-
-  - code: "000333"
-    market: "SZ"
-    name: "美的集团"
-    category: "蓝筹"
-    alert_enabled: true
-
-  # ====== 行业龙头 ======
-  - code: "300750"
-    market: "SZ"
-    name: "宁德时代"
-    category: "龙头"
-    alert_enabled: true
-
-  - code: "002594"
-    market: "SZ"
-    name: "比亚迪"
-    category: "龙头"
-    alert_enabled: true
-
-  - code: "300059"
-    market: "SZ"
-    name: "东方财富"
-    category: "龙头"
-    alert_enabled: true
-
-  - code: "688981"
-    market: "SH"
-    name: "中芯国际"
-    category: "龙头"
-    alert_enabled: true
-
-  # ====== 行业ETF ======
-  - code: "510050"
-    market: "SH"
-    name: "上证50ETF"
-    category: "ETF"
-    alert_enabled: true
-
-  - code: "510300"
-    market: "SH"
-    name: "沪深300ETF"
-    category: "ETF"
-    alert_enabled: true
-
-  - code: "159915"
-    market: "SZ"
-    name: "创业板ETF"
-    category: "ETF"
-    alert_enabled: true
-
-  - code: "512880"
-    market: "SH"
-    name: "证券ETF"
-    category: "ETF"
-    alert_enabled: true
-
-  - code: "512010"
-    market: "SH"
-    name: "医药ETF"
-    category: "ETF"
-    alert_enabled: true
-
-  - code: "159995"
-    market: "SZ"
-    name: "芯片ETF"
-    category: "ETF"
-    alert_enabled: true
-
-# ====== 大盘指数参考 ======
+- code: 002594
+  market: SZ
+  name: 比亚迪
+  category: 龙头
+  alert_enabled: true
+- code: '688981'
+  market: SH
+  name: 中芯国际
+  category: 龙头
+  alert_enabled: true
+- code: '510050'
+  market: SH
+  name: 上证50ETF
+  category: ETF
+  alert_enabled: true
+- code: '510300'
+  market: SH
+  name: 沪深300ETF
+  category: ETF
+  alert_enabled: true
+- code: '159915'
+  market: SZ
+  name: 创业板ETF
+  category: ETF
+  alert_enabled: true
+- code: '512880'
+  market: SH
+  name: 证券ETF
+  category: ETF
+  alert_enabled: true
+- code: '512010'
+  market: SH
+  name: 医药ETF
+  category: ETF
+  alert_enabled: true
+- code: '159995'
+  market: SZ
+  name: 芯片ETF
+  category: ETF
+  alert_enabled: true
+- code: '603990'
+  market: SH
+  name: 麦迪科技
+  category: 自选
+  alert_enabled: true
+- code: '600176'
+  market: SH
+  name: 中国巨石
+  category: 自选
+  alert_enabled: true
 indices:
-  - code: "000001"
-    market: "SH"
-    name: "上证指数"
-  - code: "399001"
-    market: "SZ"
-    name: "深证成指"
-  - code: "399006"
-    market: "SZ"
-    name: "创业板指"
-  - code: "000688"
-    market: "SH"
-    name: "科创50"
+- code: '000001'
+  market: SH
+  name: 上证指数
+- code: '399001'
+  market: SZ
+  name: 深证成指
+- code: '399006'
+  market: SZ
+  name: 创业板指
+- code: 000688
+  market: SH
+  name: 科创50

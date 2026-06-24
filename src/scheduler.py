@@ -1,4 +1,6 @@
-"""定时任务调度器 — APScheduler + 交易时段管理"""
+"""
+定时任务调度器 — APScheduler + 交易时段管理
+"""
 import logging
 from datetime import datetime, date
 from typing import Optional, Callable
@@ -19,12 +21,9 @@ def is_trading_day(check_date: date = None) -> bool:
     """判断是否为A股交易日"""
     if check_date is None:
         check_date = date.today()
-
     # 周末直接跳过
     if check_date.weekday() >= 5:
         return False
-
-    # 尝试用akshare交易日历验证
     try:
         import akshare as ak
         cal_df = ak.tool_trade_date_hist_sina()
@@ -36,35 +35,8 @@ def is_trading_day(check_date: date = None) -> bool:
             return date_str in trade_dates
     except Exception:
         pass
-
-    # 回退：仅排除周末
+    # 回退：周末已排除，非周末假定为交易日
     return True
-
-
-def is_trading_time() -> bool:
-    """当前是否在交易时段（9:15-15:00）"""
-    return state.is_trading_time()
-
-
-def should_run_realtime() -> bool:
-    """判断是否应该运行实时监控任务"""
-    if not is_trading_day():
-        return False
-    return is_trading_time()
-
-
-def should_run_pre_market() -> bool:
-    """判断是否应该运行盘前任务"""
-    if not is_trading_day():
-        return False
-    return state.get_market_session() == "auction"
-
-
-def should_run_post_market() -> bool:
-    """判断是否应该运行盘后任务"""
-    if not is_trading_day():
-        return False
-    return state.get_market_session() == "post_market"
 
 
 # ====== 任务回调注册 ======
@@ -73,6 +45,8 @@ _realtime_callback: Optional[Callable] = None
 _news_callback: Optional[Callable] = None
 _pre_market_callback: Optional[Callable] = None
 _post_market_callback: Optional[Callable] = None
+_global_market_callback: Optional[Callable] = None
+_technical_scan_callback: Optional[Callable] = None
 
 
 def register_realtime_task(callback: Callable):
@@ -95,24 +69,34 @@ def register_post_market_task(callback: Callable):
     _post_market_callback = callback
 
 
+def register_global_market_task(callback: Callable):
+    global _global_market_callback
+    _global_market_callback = callback
+
+
+def register_technical_scan_task(callback: Callable):
+    global _technical_scan_callback
+    _technical_scan_callback = callback
+
+
 def _wrap_realtime():
-    if should_run_realtime() and _realtime_callback:
+    if state.is_trading_time() and _realtime_callback:
         try:
             _realtime_callback()
         except Exception as e:
-            logger.error(f"实时监控任务异常: {e}", exc_info=True)
+            logger.error(f"实时监控异常: {e}", exc_info=True)
 
 
 def _wrap_news():
-    if should_run_realtime() and _news_callback:
+    if state.is_trading_time() and _news_callback:
         try:
             _news_callback()
         except Exception as e:
-            logger.error(f"新闻采集任务异常: {e}", exc_info=True)
+            logger.error(f"新闻采集异常: {e}", exc_info=True)
 
 
 def _wrap_pre_market():
-    if should_run_pre_market() and _pre_market_callback:
+    if _pre_market_callback:
         try:
             _pre_market_callback()
         except Exception as e:
@@ -120,11 +104,27 @@ def _wrap_pre_market():
 
 
 def _wrap_post_market():
-    if should_run_post_market() and _post_market_callback:
+    if _post_market_callback:
         try:
             _post_market_callback()
         except Exception as e:
             logger.error(f"盘后任务异常: {e}", exc_info=True)
+
+
+def _wrap_global_market():
+    if _global_market_callback:
+        try:
+            _global_market_callback()
+        except Exception as e:
+            logger.error(f"全球市场采集异常: {e}", exc_info=True)
+
+
+def _wrap_technical_scan():
+    if state.is_trading_time() and _technical_scan_callback:
+        try:
+            _technical_scan_callback()
+        except Exception as e:
+            logger.error(f"技术扫描异常: {e}", exc_info=True)
 
 
 def start():
@@ -136,11 +136,13 @@ def start():
     news_interval = sched_cfg.get("news_interval", 300)
     pre_time = sched_cfg.get("pre_market_time", "09:15")
     post_time = sched_cfg.get("post_market_time", "15:10")
+    global_interval = sched_cfg.get("global_market_interval", 600)
+    technical_interval = sched_cfg.get("technical_scan_interval", 600)
 
     pre_h, pre_m = map(int, pre_time.split(":"))
     post_h, post_m = map(int, post_time.split(":"))
 
-    # 实时行情监控（仅交易时段）
+    # 实时行情监控
     scheduler.add_job(
         _wrap_realtime,
         IntervalTrigger(seconds=realtime_interval),
@@ -176,6 +178,24 @@ def start():
         replace_existing=True,
     )
 
+    # 全球市场采集
+    scheduler.add_job(
+        _wrap_global_market,
+        IntervalTrigger(seconds=global_interval),
+        id="global_market",
+        name="全球市场采集",
+        replace_existing=True,
+    )
+
+    # 技术指标扫描
+    scheduler.add_job(
+        _wrap_technical_scan,
+        IntervalTrigger(seconds=technical_interval),
+        id="technical_scan",
+        name="技术指标扫描",
+        replace_existing=True,
+    )
+
     # 每日0点重置状态
     scheduler.add_job(
         state.reset_daily_stats,
@@ -185,7 +205,7 @@ def start():
         replace_existing=True,
     )
 
-    # 日终交易日检查
+    # 交易日检查（每天早上8点）
     scheduler.add_job(
         lambda: setattr(state, "today_is_trading_day", is_trading_day()),
         CronTrigger(hour=8, minute=0, day_of_week="mon-fri"),
@@ -197,14 +217,13 @@ def start():
     scheduler.start()
     state.today_is_trading_day = is_trading_day()
     logger.info(
-        f"调度器已启动 | 实时间隔:{realtime_interval}s | "
-        f"新闻间隔:{news_interval}s | "
+        f"调度器已启动 | 实时:{realtime_interval}s | 新闻:{news_interval}s | "
+        f"全球:{global_interval}s | 技术扫描:{technical_interval}s | "
         f"盘前:{pre_time} | 盘后:{post_time} | "
-        f"今日交易日:{state.today_is_trading_day}"
+        f"交易日:{state.today_is_trading_day}"
     )
 
 
 def stop():
-    """停止调度器"""
     scheduler.shutdown(wait=False)
     logger.info("调度器已停止")

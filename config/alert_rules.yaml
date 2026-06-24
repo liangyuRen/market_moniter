@@ -84,7 +84,7 @@ rules:
     type: "daily"
     category: "opportunity"
     description: "MACD日线金叉"
-    enabled: false             # 需要历史数据，默认关闭
+    enabled: true
     params: {}
     priority: 4
 
@@ -93,7 +93,7 @@ rules:
     type: "daily"
     category: "risk"
     description: "MACD日线死叉"
-    enabled: false
+    enabled: true
     params: {}
     priority: 4
 
@@ -102,10 +102,10 @@ rules:
     type: "realtime"
     category: "opportunity"
     description: "股价突破重要均线"
-    enabled: false
+    enabled: true
     params:
-      ma_periods: [20, 60]    # 突破的均线周期
-      breakout_pct: 1.0       # 突破幅度%
+      ma_periods: [20, 60]
+      breakout_pct: 1.0
     priority: 5
 
   # ====== 资金流向 ======

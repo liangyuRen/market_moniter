@@ -13,6 +13,9 @@ venv/
 # 配置文件（含敏感信息，不提交）
 config/settings.yaml
 
+# Claude Code 本地配置
+.claude/
+
 # IDE
 .idea/
 .vscode/

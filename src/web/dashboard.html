@@ -1,10 +1,10 @@
-<!-- 自动盯盘Agent · 实时监控终端 v0.2.0 -->
+<!-- 自动盯盘Agent v0.3.1 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自动盯盘Agent · 实时终端 v0.2.0</title>
+<title>盯盘Agent v0.3.1</title>
 <style>
 :root {
   --bg-primary: #06090f; --bg-secondary: #0d1117; --bg-card: #161b22;
@@ -344,6 +344,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 </div>
 
 <script>
+const APP_VERSION = '0.3.1';
+console.log('盯盘Agent v' + APP_VERSION + ' 初始化...');
+window.onerror = function(msg, src, line, col, err) {
+  console.error('JS Error:', msg, 'at', src, ':' + line);
+  const statusEl = document.getElementById('bt-status');
+  if (statusEl) statusEl.innerHTML = '<span style=\"color:var(--orange)\">JS错误: ' + msg + '</span>';
+  return false;
+};
+
 const API = '/api';
 let ws = null, wsReconnectTimer = null;
 let alertFilter = 'all', alertCache = [];
@@ -460,14 +469,54 @@ function showNotification(alert) {
   } catch(e) {}
 }
 
+// ====== Event Delegation (replaces inline onclick) ======
+document.addEventListener('DOMContentLoaded', () => {
+  // Stock list click delegation
+  const stockList = document.getElementById('stock-list');
+  if (stockList) {
+    stockList.addEventListener('click', (e) => {
+      const delBtn = e.target.closest('.wl-del-btn');
+      if (delBtn) {
+        e.stopPropagation();
+        const code = delBtn.dataset.code;
+        if (code) removeFromWatchlist(code);
+        return;
+      }
+      const row = e.target.closest('.stock-row');
+      if (!row) return;
+      const code = row.dataset.code;
+      const name = row.dataset.name;
+      if (code && name && !wlEditMode) {
+        loadKlineChart(code, name);
+        loadTechnical(code, name);
+      }
+    });
+  }
+
+  // Backtest history click delegation
+  const btHistory = document.getElementById('bt-history');
+  if (btHistory) {
+    btHistory.addEventListener('click', (e) => {
+      const sortEl = e.target.closest('[onclick^="sortBacktestResults"]');
+      if (sortEl) return; // let inline sort handler work
+      const filterEl = e.target.closest('[onclick^="loadBacktestHistory"]');
+      if (filterEl) return; // let inline filter handler work
+    });
+  }
+});
+
 // ====== Tab Switching ======
 document.querySelectorAll('.main-tabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.main-tabs .tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    loadTabData(btn.dataset.tab);
+    const target = document.getElementById('tab-' + btn.dataset.tab);
+    if (target) {
+      target.classList.add('active');
+      loadTabData(btn.dataset.tab);
+      if (btn.dataset.tab === 'alerts') { loadAlerts(); }
+    }
   });
 });
 
@@ -488,11 +537,11 @@ async function loadWatchlist() {
       const pct = s.change_pct || 0;
       const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
       const sign = pct > 0 ? '+' : '';
-      const delBtn = wlEditMode ? `<span style="color:var(--red);cursor:pointer;font-size:14px;padding-left:2px" onclick="event.stopPropagation();removeFromWatchlist('${s.code}')" title="移除">×</span>` : '';
       const turnover = s.turnover > 0 ? s.turnover.toFixed(1) + '%' : '';
       const mcap = s.total_market_cap > 0 ? (s.total_market_cap/1e8).toFixed(0) + '亿' : '';
       const volText = s.volume_ratio > 0 ? s.volume_ratio.toFixed(1) : '';
-      return `<div class="stock-row" data-code="${s.code}" data-price="${s.price||0}" onclick="${wlEditMode ? '' : "loadKlineChart('"+s.code+"','"+s.name+"');loadTechnical('"+s.code+"','"+s.name+"')"}">
+      const delBtn = wlEditMode ? `<span class="wl-del-btn" data-code="${s.code}" style="color:var(--red);cursor:pointer;font-size:14px;padding-left:2px" title="移除">×</span>` : '';
+      return `<div class="stock-row" data-code="${s.code}" data-name="${s.name.replace(/"/g,'&quot;')}" data-price="${s.price||0}">
         <span class="code">${s.code.substring(2)}</span>
         <span class="name" title="${s.name}">${s.name}</span>
         <span class="price-col">${(s.price||0).toFixed(2)}</span>
@@ -1064,9 +1113,9 @@ async function loadBacktestHistory(filterCode) {
     // Filter by stock
     const codes = [...new Set((r.results||[]).map(r => r.code))];
     let filterHtml = '<div style="padding:4px 6px;font-size:10px;display:flex;gap:4px;flex-wrap:wrap">';
-    filterHtml += `<span style="cursor:pointer;color:${filterCode?'var(--text-muted)':'var(--accent)}" onclick="loadBacktestHistory()">全部</span>`;
+    filterHtml += '<span style="cursor:pointer;color:' + (filterCode ? 'var(--text-muted)' : 'var(--accent)') + '" onclick="loadBacktestHistory()">全部</span>';
     codes.forEach(c => {
-      filterHtml += `<span style="cursor:pointer;color:${filterCode===c?'var(--accent)':'var(--text-muted)}" onclick="loadBacktestHistory('${c}')">${c}</span>`;
+      filterHtml += '<span style="cursor:pointer;color:' + (filterCode === c ? 'var(--accent)' : 'var(--text-muted)') + '" onclick="loadBacktestHistory(\'' + c + '\')">' + c + '</span>';
     });
     filterHtml += '</div>';
     document.getElementById('bt-history').innerHTML = filterHtml + html;

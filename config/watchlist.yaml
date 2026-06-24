@@ -49,6 +49,11 @@ stocks:
   name: 中国巨石
   category: 自选
   alert_enabled: true
+- code: '600519'
+  market: SH
+  name: 贵州茅台
+  category: 蓝筹
+  alert_enabled: true
 indices:
 - code: '000001'
   market: SH

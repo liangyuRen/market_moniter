@@ -202,6 +202,11 @@ def create_app() -> FastAPI:
     async def api_fundflow():
         from src.storage.database import get_fund_flow_summary
         flows = get_fund_flow_summary()
+        watchlist = get_watchlist()
+        code_name = {item["code"].strip(): item.get("name", "") for item in watchlist}
+        for f in flows:
+            if not f.get("name"):
+                f["name"] = code_name.get(f.get("code", ""), "")
         return {"count": len(flows), "flows": flows}
 
     # ---- 全球市场 ----

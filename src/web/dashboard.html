@@ -99,6 +99,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 .summary-block .factor.bullish{color:var(--red);font-weight:500}
 .summary-block .factor.bearish{color:var(--green);font-weight:500}
 
+/* AI Panel */
+.ai-trend{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700}
+.ai-trend.bullish{background:rgba(255,107,99,0.15);color:var(--red)}
+.ai-trend.bearish{background:rgba(86,211,100,0.15);color:var(--green)}
+.ai-trend.neutral{background:rgba(227,179,65,0.15);color:var(--orange)}
+.ai-confidence{font-size:11px;color:var(--text-secondary)}
+.ai-confidence .bar{display:inline-block;height:4px;border-radius:2px;margin-left:4px;vertical-align:middle}
+.ai-advice{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;font-size:14px;font-weight:700}
+.ai-advice.buy{background:rgba(255,107,99,0.12);color:var(--red);border:1px solid rgba(255,107,99,0.3)}
+.ai-advice.sell{background:rgba(86,211,100,0.12);color:var(--green);border:1px solid rgba(86,211,100,0.3)}
+.ai-advice.hold{background:rgba(227,179,65,0.12);color:var(--orange);border:1px solid rgba(227,179,65,0.3)}
+.ai-advice.wait{background:rgba(125,133,144,0.12);color:var(--text-muted);border:1px solid rgba(125,133,144,0.3)}
+.ai-sr-row{display:flex;justify-content:space-between;padding:3px 6px;font-size:11px;border-bottom:1px solid rgba(37,43,54,0.5)}
+.ai-sr-row .sr-price{font-weight:600;font-variant-numeric:tabular-nums}
+.ai-factor{font-size:11px;padding:3px 6px;line-height:1.5;display:flex;gap:4px}
+.ai-factor::before{content:'•';flex-shrink:0}
+.ai-factor.risk{color:var(--red)}
+.ai-factor.bull{color:var(--green)}
+.ai-summary{font-size:12px;line-height:1.6;padding:8px;background:rgba(88,166,255,0.05);border-radius:4px;border-left:2px solid var(--accent)}
+.risk-level{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.risk-level.low{background:rgba(86,211,100,0.15);color:var(--green)}
+.risk-level.medium{background:rgba(227,179,65,0.15);color:var(--orange)}
+.risk-level.high{background:rgba(255,107,99,0.15);color:var(--red)}
+.risk-level.critical{background:rgba(255,107,99,0.3);color:var(--red)}
+.sentiment-gauge{position:relative;height:8px;border-radius:4px;margin:6px 0;background:linear-gradient(to right,var(--green),var(--orange),var(--red))}
+.sentiment-gauge .marker{position:absolute;top:-4px;width:3px;height:16px;border-radius:1px;background:var(--text-primary);transform:translateX(-50%)}
+
 .sentiment-gauge{text-align:center;padding:10px}
 .sentiment-gauge .score{font-size:32px;font-weight:700}
 .sentiment-gauge .label{font-size:11px;color:var(--text-secondary);margin-top:4px}
@@ -206,7 +233,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
   </div>
   <div class="panel panel-right">
     <div class="section-title"><span>新闻快讯</span><span class="section-count" id="news-count">0条</span></div>
-    <div id="news-list" style="max-height:55%;overflow-y:auto"></div>
+    <div id="news-list" style="max-height:35%;overflow-y:auto"></div>
+    <div class="section-title"><span>AI 智能分析</span><span style="font-size:10px;color:var(--text-muted)" id="ai-stock-label"></span></div>
+    <div id="ai-panel" style="overflow-y:auto;max-height:45%">
+      <div style="padding:16px;color:var(--text-muted);font-size:12px;text-align:center">点击自选股查看AI分析<br><small>技术面+情绪面+仓位建议</small></div>
+    </div>
     <div class="section-title"><span>系统状态</span></div>
     <div id="market-info" style="padding:8px;font-size:12px"></div>
   </div>
@@ -734,6 +765,118 @@ async function loadTechnical(code, name) {
   } catch(e) { document.getElementById('technical-detail').innerHTML = '<div style="color:var(--red);padding:20px">加载失败</div>'; }
 }
 
+// ====== AI Analysis ======
+let aiData = null, srData = null;
+
+async function loadAIAnalysis(code, name) {
+  document.getElementById('ai-stock-label').textContent = '· ' + name;
+  document.getElementById('ai-panel').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-secondary)">AI分析中...</div>';
+  try {
+    const r = await (await fetch(API+'/ai/analyze/'+code)).json();
+    if (r.error) { throw new Error(r.error); }
+    aiData = r;
+    renderAIPanel(r);
+    // Also load sentiment line for chart overlay
+    loadSentimentLine(code);
+  } catch(e) {
+    document.getElementById('ai-panel').innerHTML = '<div style="padding:16px;color:var(--orange);text-align:center;font-size:12px">AI分析暂不可用<br><small>' + (e.message||'') + '</small></div>';
+  }
+}
+
+function renderAIPanel(d) {
+  const trendEmoji = {bullish:'📈', bearish:'📉', neutral:'📊'};
+  const trendLabel = {bullish:'看多', bearish:'看空', neutral:'震荡'};
+  const adviceCls = {加仓:'buy', 减仓:'sell', 持有:'hold', 观望:'wait'};
+  const sourceTag = d.source === 'local' ? '<span style="font-size:9px;color:var(--text-muted)">(本地引擎)</span>' : '<span style="font-size:9px;color:var(--accent)">(DeepSeek AI)</span>';
+
+  // Support/Resistance from combined data
+  const sr = srData || {};
+  const supports = sr.supports || [];
+  const resistances = sr.resistances || [];
+  if (d.support_level && !supports.find(s => Math.abs(s.price - d.support_level) < 0.01)) {
+    supports.push({price: d.support_level, label: 'AI支撑'});
+  }
+  if (d.resistance_level && !resistances.find(s => Math.abs(s.price - d.resistance_level) < 0.01)) {
+    resistances.push({price: d.resistance_level, label: 'AI阻力'});
+  }
+  supports.sort((a,b) => b.price - a.price);
+  resistances.sort((a,b) => a.price - b.price);
+
+  const html = `
+    <div style="padding:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span class="ai-trend ${d.trend}">${trendEmoji[d.trend]||'📊'} ${trendLabel[d.trend]||'震荡'}</span>
+        <span class="ai-confidence">置信度 <b>${d.confidence||50}%</b><span class="bar" style="width:${d.confidence||50}px;background:${(d.confidence||50)>60?'var(--red)':(d.confidence||50)<40?'var(--green)':'var(--orange)'}"></span></span>
+        ${sourceTag}
+      </div>
+      <div style="text-align:center;margin:8px 0">
+        <span class="ai-advice ${adviceCls[d.position_advice]||'hold'}">${d.position_advice||'持有'} ${d.position_pct>0?'+'+d.position_pct+'%':d.position_pct+'%'}</span>
+      </div>
+      <div class="sentiment-gauge"><div class="marker" style="left:${d.confidence||50}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);padding:0 2px">
+        <span>极度悲观</span><span>偏空</span><span>中性</span><span>偏多</span><span>极度乐观</span>
+      </div>
+
+      <div style="margin-top:10px">
+        <div class="ai-summary">${d.summary||'暂无分析结论'}</div>
+      </div>
+
+      ${supports.length || resistances.length ? `
+      <div style="margin-top:8px">
+        <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-bottom:4px">📏 关键价位</div>
+        ${resistances.slice(0,2).map(s => `<div class="ai-sr-row"><span style="color:var(--red)">阻力</span><span>${s.label}</span><span class="sr-price" style="color:var(--red)">¥${s.price.toFixed(2)}</span></div>`).join('')}
+        <div class="ai-sr-row" style="font-weight:700;color:var(--text-primary)"><span>现价</span><span></span><span class="sr-price">¥${(d.price||0).toFixed(2)}</span></div>
+        ${supports.slice(0,2).map(s => `<div class="ai-sr-row"><span style="color:var(--green)">支撑</span><span>${s.label}</span><span class="sr-price" style="color:var(--green)">¥${s.price.toFixed(2)}</span></div>`).join('')}
+      </div>` : ''}
+
+      ${d.risk_level ? `
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text-secondary)">风险等级:</span>
+        <span class="risk-level ${d.risk_level}">${d.risk_level.toUpperCase()}</span>
+      </div>` : ''}
+
+      ${(d.bullish_factors||[]).length > 0 ? `
+      <div style="margin-top:6px">
+        <div style="font-size:11px;color:var(--green);font-weight:600">📈 利好因素</div>
+        ${d.bullish_factors.map(f => `<div class="ai-factor bull">${f}</div>`).join('')}
+      </div>` : ''}
+
+      ${(d.risk_factors||[]).length > 0 ? `
+      <div style="margin-top:4px">
+        <div style="font-size:11px;color:var(--red);font-weight:600">⚠️ 风险提示</div>
+        ${d.risk_factors.map(f => `<div class="ai-factor risk">${f}</div>`).join('')}
+      </div>` : ''}
+
+      ${d.target_price ? `
+      <div style="margin-top:8px;display:flex;gap:8px;font-size:11px">
+        <span style="color:var(--red)">🎯 目标: ¥${d.target_price.toFixed(2)}</span>
+        <span style="color:var(--green)">🛑 止损: ¥${(d.stop_loss||0).toFixed(2)}</span>
+      </div>` : ''}
+    </div>`;
+  document.getElementById('ai-panel').innerHTML = html;
+}
+
+async function loadSupportResistance(code) {
+  try {
+    const r = await (await fetch(API+'/support-resistance/'+code)).json();
+    if (!r.error) {
+      srData = r.support_resistance || {};
+      // Re-render AI panel with new SR data
+      if (aiData) renderAIPanel(aiData);
+    }
+  } catch(e) {}
+}
+
+async function loadSentimentLine(code) {
+  try {
+    const r = await (await fetch(API+'/ai/sentiment-line/'+code)).json();
+    sentimentData = r.points || [];
+    if (klineData) drawKline(); // Redraw K-line with sentiment overlay
+  } catch(e) {}
+}
+
+let sentimentData = [];
+
 // ====== K-line Chart ======
 let klineData = null, klineCode = '', klineName = '';
 let klineHoverIdx = -1;
@@ -750,6 +893,9 @@ async function loadKlineChart(code, name) {
     klineData = r;
     drawKline();
     document.getElementById('chart-stock-info').textContent = code + ' · ' + r.daily_bars.length + '日日K + ' + r.minute_bars.length + '条分时';
+    // Also load AI analysis and support/resistance
+    loadAIAnalysis(code, name);
+    loadSupportResistance(code);
   } catch(e) {
     document.getElementById('chart-stock-info').textContent = code + ' · 加载失败';
   }
@@ -885,6 +1031,85 @@ function drawKline() {
   ctx.font = '9px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('VOL', pad.left + 2, pad.top + priceH + 10);
+
+  // Sentiment line overlay (draw on price chart area)
+  if (sentimentData && sentimentData.length > 2 && bars.length > 0) {
+    // Build date->index map for bars
+    const barDateMap = {};
+    bars.forEach((b, i) => {
+      const d = (b.date||'').substring(0, 10);
+      barDateMap[d] = i;
+    });
+
+    // Map sentiment points to bar indices
+    const sentPoints = [];
+    sentimentData.forEach(p => {
+      const d = (p.date||'').substring(0, 10);
+      if (barDateMap[d] !== undefined) {
+        sentPoints.push({ ...p, barIdx: barDateMap[d] });
+      }
+    });
+
+    if (sentPoints.length > 1) {
+      // Draw sentiment line at the bottom of price chart
+      const sentTop = pad.top + priceH - 30;
+      const sentH = 25;
+      const sentMin = 0, sentMax = 100;
+
+      // Background
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(pad.left, sentTop, chartW, sentH);
+
+      // Gradient fill under the line
+      const lastX = xPos(sentPoints[sentPoints.length - 1].barIdx);
+      const firstX = xPos(sentPoints[0].barIdx);
+
+      // Draw guideline
+      ctx.strokeStyle = 'rgba(125,133,144,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([2, 4]);
+      const midY = sentTop + sentH / 2;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, midY);
+      ctx.lineTo(pad.left + chartW, midY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw sentiment line
+      ctx.strokeStyle = '#bc8cff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let first = true;
+      for (const p of sentPoints) {
+        const sx = xPos(p.barIdx);
+        const sy = sentTop + sentH - (p.composite / sentMax) * sentH;
+        if (first) { ctx.moveTo(sx, sy); first = false; }
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+
+      // Current sentiment dot
+      const lastP = sentPoints[sentPoints.length - 1];
+      const lx = xPos(lastP.barIdx);
+      const ly = sentTop + sentH - (lastP.composite / sentMax) * sentH;
+      ctx.fillStyle = lastP.composite >= 60 ? '#ff6b63' : lastP.composite >= 40 ? '#e3b341' : '#56d364';
+      ctx.beginPath();
+      ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      ctx.fillStyle = '#bc8cff';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('情绪:' + (lastP.label||''), pad.left + chartW, sentTop + 10);
+
+      // Sentiment label
+      ctx.fillStyle = '#7d8590';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('SENT', pad.left + 2, sentTop + 10);
+    }
+  }
 
   // Hover crosshair
   if (klineHoverIdx >= 0 && klineHoverIdx < allBars.length) {

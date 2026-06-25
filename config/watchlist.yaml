@@ -54,6 +54,16 @@ stocks:
   name: 贵州茅台
   category: 蓝筹
   alert_enabled: true
+- code: '601138'
+  market: SH
+  name: 工业富联
+  category: 自选
+  alert_enabled: true
+- code: '600396'
+  market: SH
+  name: 华电辽能
+  category: 自选
+  alert_enabled: true
 indices:
 - code: '000001'
   market: SH

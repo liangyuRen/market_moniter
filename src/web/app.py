@@ -283,6 +283,54 @@ def create_app() -> FastAPI:
         summary = calc_technical_summary(hist)
         return {"code": code, "technical": summary}
 
+    # ---- AI 智能分析 ----
+    @app.get("/api/ai/analyze/{code}")
+    async def api_ai_analyze(code: str, sector: str = Query(default="综合")):
+        from src.analyzer.deepseek_advisor import analyze_stock
+        result = analyze_stock(code, "", sector)
+        return result
+
+    @app.get("/api/ai/sentiment-line/{code}")
+    async def api_sentiment_line(code: str):
+        from src.collector.market_data import fetch_stock_history
+        from src.analyzer.technical import calc_sentiment_line
+        market = "SH" if code.startswith(("6", "688")) else "SZ"
+        hist = fetch_stock_history(code, market, days=120)
+        if hist.empty:
+            return {"error": "无法获取历史数据", "code": code}
+        points = calc_sentiment_line(hist)
+        return {"code": code, "points": points}
+
+    @app.get("/api/support-resistance/{code}")
+    async def api_support_resistance(code: str):
+        from src.collector.market_data import fetch_stock_history
+        from src.analyzer.technical import calc_support_resistance, calc_technical_summary
+        market = "SH" if code.startswith(("6", "688")) else "SZ"
+        hist = fetch_stock_history(code, market, days=250)
+        if hist.empty:
+            return {"error": "无法获取历史数据", "code": code}
+        sr = calc_support_resistance(hist)
+        technical = calc_technical_summary(hist)
+        return {"code": code, "support_resistance": sr, "technical": technical}
+
+    @app.get("/api/history/{code}")
+    async def api_history(code: str, days: int = Query(default=250, le=500)):
+        from src.collector.market_data import fetch_stock_history
+        market = "SH" if code.startswith(("6", "688")) else "SZ"
+        hist = fetch_stock_history(code, market, days=days)
+        bars = []
+        if not hist.empty:
+            for idx, row in hist.iterrows():
+                bars.append({
+                    "date": idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx),
+                    "open": round(float(row["开盘"]), 3),
+                    "high": round(float(row["最高"]), 3),
+                    "low": round(float(row["最低"]), 3),
+                    "close": round(float(row["收盘"]), 3),
+                    "volume": int(float(row["成交量"])),
+                })
+        return {"code": code, "bars": bars, "count": len(bars)}
+
     # ---- 策略回测 ----
     @app.get("/api/backtest/strategies")
     async def api_backtest_strategies():

@@ -116,6 +116,147 @@ def check_rsi_extreme(rsi_value: float, oversold: float = 30, overbought: float 
     return "normal"
 
 
+def calc_sentiment_line(hist_df: pd.DataFrame) -> list[dict]:
+    """计算复合情绪线 — 综合RSI/MACD/均价偏离/量比/动量的标准化得分(0-100)"""
+    if hist_df.empty or len(hist_df) < 20:
+        return []
+
+    close = hist_df["收盘"].astype(float)
+    high = hist_df["最高"].astype(float)
+    low = hist_df["最低"].astype(float)
+    volume = hist_df["成交量"].astype(float)
+
+    dates = hist_df.index if hasattr(hist_df.index[0], "strftime") else range(len(close))
+
+    # RSI情绪 (0-100, 50为中性)
+    rsi = calc_rsi(close)
+    rsi_score = rsi.fillna(50)  # 直接用作情绪分量
+
+    # MACD情绪 (MACD柱标准化)
+    macd = calc_macd(close)
+    macd_hist = macd["hist"]
+    macd_max = macd_hist.abs().rolling(60).max().fillna(macd_hist.abs().max())
+    macd_score = 50 + (macd_hist / macd_max.replace(0, 1)) * 40  # 映射到10-90
+
+    # 价格偏离MA20情绪 (偏离越大->极端情绪)
+    ma20 = close.rolling(20).mean()
+    deviation = (close - ma20) / ma20.replace(0, 1) * 100
+    dev_score = 50 - deviation * 5  # 正向偏离->看空, 负向偏离->看多(均值回归)
+    dev_score = dev_score.clip(5, 95)
+
+    # 量比情绪 (放量上涨=看多, 放量下跌=看空)
+    vol_ma5 = volume.rolling(5).mean()
+    vol_ratio = volume / vol_ma5.replace(0, 1)
+    price_dir = close.diff().apply(lambda x: 1 if x > 0 else -1 if x < 0 else 0)
+    vol_score = 50 + vol_ratio.fillna(1) * price_dir.rolling(3).mean().fillna(0) * 15
+    vol_score = vol_score.clip(5, 95)
+
+    # 动量情绪 (5日涨跌幅)
+    momentum = close.pct_change(5).fillna(0) * 100
+    mom_score = 50 + momentum * 3  # +5%涨幅->65分, -5%->35分
+    mom_score = mom_score.clip(5, 95)
+
+    # 复合情绪 = 加权平均
+    composite = (
+        rsi_score * 0.25 +
+        macd_score * 0.25 +
+        dev_score * 0.20 +
+        vol_score * 0.15 +
+        mom_score * 0.15
+    )
+
+    # 情绪标签
+    def label(v):
+        if v >= 75: return "极度乐观"
+        if v >= 60: return "偏多"
+        if v >= 45: return "中性偏多"
+        if v >= 35: return "中性偏空"
+        if v >= 20: return "偏空"
+        return "极度悲观"
+
+    points = []
+    for i in range(len(composite)):
+        if pd.isna(composite.iloc[i]):
+            continue
+        dt = dates[i]
+        date_str = dt.strftime("%Y-%m-%d") if hasattr(dt, "strftime") else str(dt)
+        points.append({
+            "date": date_str,
+            "composite": round(float(composite.iloc[i]), 1),
+            "rsi": round(float(rsi_score.iloc[i]), 1) if not pd.isna(rsi_score.iloc[i]) else 50,
+            "macd": round(float(macd_score.iloc[i]), 1) if not pd.isna(macd_score.iloc[i]) else 50,
+            "label": label(composite.iloc[i]),
+            "price": round(float(close.iloc[i]), 2),
+        })
+
+    return points
+
+
+def calc_support_resistance(hist_df: pd.DataFrame) -> dict:
+    """计算关键支撑位和阻力位"""
+    if hist_df.empty or len(hist_df) < 20:
+        return {}
+
+    close = hist_df["收盘"].astype(float)
+    high = hist_df["最高"].astype(float)
+    low = hist_df["最低"].astype(float)
+    price = close.iloc[-1]
+
+    # 移动均线支撑/阻力
+    mas = {}
+    for p in [5, 10, 20, 60, 120, 250]:
+        if len(close) >= p:
+            mas[f"ma{p}"] = round(close.iloc[-p:].mean(), 2)
+
+    # 布林带上下轨
+    boll = calc_boll(close)
+    boll_upper = round(boll["upper"].iloc[-1], 2)
+    boll_mid = round(boll["mid"].iloc[-1], 2)
+    boll_lower = round(boll["lower"].iloc[-1], 2)
+
+    # 近期高低点
+    recent_20_high = round(high.iloc[-20:].max(), 2)
+    recent_20_low = round(low.iloc[-20:].min(), 2)
+    recent_60_high = round(high.iloc[-60:].max(), 2) if len(high) >= 60 else recent_20_high
+    recent_60_low = round(low.iloc[-60:].min(), 2) if len(low) >= 60 else recent_20_low
+
+    # 收集所有支撑和阻力候选
+    support_candidates = []
+    resistance_candidates = []
+
+    for label, val in mas.items():
+        if val < price:
+            support_candidates.append((val, label.upper()))
+        else:
+            resistance_candidates.append((val, label.upper()))
+
+    support_candidates.append((boll_lower, "布林下轨"))
+    resistance_candidates.append((boll_upper, "布林上轨"))
+    support_candidates.append((recent_20_low, "20日低点"))
+    resistance_candidates.append((recent_20_high, "20日高点"))
+
+    if len(high) >= 60:
+        support_candidates.append((recent_60_low, "60日低点"))
+        resistance_candidates.append((recent_60_high, "60日高点"))
+
+    # 排序：支撑位从高到低（离现价最近的在前面），阻力位从低到高
+    support_candidates.sort(key=lambda x: -x[0])
+    resistance_candidates.sort(key=lambda x: x[0])
+
+    # 取最近的3个
+    supports = [{"price": p, "label": l} for p, l in support_candidates[:3] if p < price]
+    resistances = [{"price": p, "label": l} for p, l in resistance_candidates[:3] if p > price]
+
+    return {
+        "price": round(price, 2),
+        "supports": supports,
+        "resistances": resistances,
+        "boll_upper": boll_upper,
+        "boll_mid": boll_mid,
+        "boll_lower": boll_lower,
+    }
+
+
 def calc_technical_summary(hist_df: pd.DataFrame) -> dict:
     """从历史K线计算全部技术指标摘要"""
     if hist_df.empty or len(hist_df) < 20:

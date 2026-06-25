@@ -126,11 +126,20 @@ def create_app() -> FastAPI:
     @app.get("/api/quotes")
     async def api_quotes():
         quotes = state.get_all_quotes()
+        # 非连续交易时段，数据可能失真
+        in_trading = state.is_continuous_trading()
+        if not in_trading:
+            # 检查上次更新是否在今日
+            if state.last_quote_update:
+                today = datetime.now().date()
+                if state.last_quote_update.date() != today:
+                    quotes = {}  # 非今日数据，清空
         return {
             "count": len(quotes),
             "last_update": state.last_quote_update.isoformat() if state.last_quote_update else None,
             "quotes": quotes,
             "market_session": state.get_market_session(),
+            "is_trading": in_trading,
         }
 
     @app.get("/api/watchlist")

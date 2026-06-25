@@ -69,6 +69,12 @@ class AppState:
         return session in ("auction", "morning", "afternoon")
 
     @staticmethod
+    def is_continuous_trading(now: datetime = None) -> bool:
+        """是否正在连续竞价（排除集合竞价，数据更可靠）"""
+        session = AppState.get_market_session(now)
+        return session in ("morning", "afternoon")
+
+    @staticmethod
     def is_auction_time(now: datetime = None) -> bool:
         return AppState.get_market_session(now) == "auction"
 

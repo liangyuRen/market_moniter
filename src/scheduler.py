@@ -80,7 +80,7 @@ def register_technical_scan_task(callback: Callable):
 
 
 def _wrap_realtime():
-    if state.is_trading_time() and _realtime_callback:
+    if state.is_continuous_trading() and _realtime_callback:
         try:
             _realtime_callback()
         except Exception as e:
@@ -88,7 +88,7 @@ def _wrap_realtime():
 
 
 def _wrap_news():
-    if state.is_trading_time() and _news_callback:
+    if state.is_continuous_trading() and _news_callback:
         try:
             _news_callback()
         except Exception as e:

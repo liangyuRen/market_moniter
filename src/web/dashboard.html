@@ -168,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 @keyframes flashUp{0%{background:rgba(255,59,48,0.15)}100%{background:transparent}}
 @keyframes flashDown{0%{background:rgba(52,199,89,0.15)}100%{background:transparent}}
 
-.tab-content{display:none;flex-direction:column;height:100%}
+.tab-content{display:none;flex-direction:column;height:100%;flex:1;min-width:0}
 .tab-content.active{display:flex}
 
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
@@ -531,8 +531,8 @@ function showNotification(alert) {
   } catch(e) {}
 }
 
-// ====== Event Delegation (replaces inline onclick) ======
-document.addEventListener('DOMContentLoaded', () => {
+// ====== Event Delegation ======
+(function setupDelegation() {
   // Stock list click delegation
   const stockList = document.getElementById('stock-list');
   if (stockList) {
@@ -560,12 +560,40 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btHistory) {
     btHistory.addEventListener('click', (e) => {
       const sortEl = e.target.closest('[onclick^="sortBacktestResults"]');
-      if (sortEl) return; // let inline sort handler work
+      if (sortEl) return;
       const filterEl = e.target.closest('[onclick^="loadBacktestHistory"]');
-      if (filterEl) return; // let inline filter handler work
+      if (filterEl) return;
     });
   }
-});
+
+  // K-line canvas mouse events
+  const canvas = document.getElementById('kline-canvas');
+  if (canvas) {
+    canvas.addEventListener('mousemove', (e) => {
+      if (!klineData) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const bars = klineData.daily_bars || klineData.minute_bars || [];
+      if (bars.length < 2) return;
+      const chartW = rect.width - 60;
+      const idx = Math.round((mx - 10) / chartW * (bars.length - 1));
+      const newIdx = Math.max(0, Math.min(bars.length - 1, idx));
+      if (newIdx !== klineHoverIdx) {
+        klineHoverIdx = newIdx;
+        drawKline();
+      }
+    });
+    canvas.addEventListener('mouseleave', () => {
+      klineHoverIdx = -1;
+      drawKline();
+    });
+    new ResizeObserver(() => {
+      if (klineData && document.getElementById('kline-canvas').style.display !== 'none') {
+        drawKline();
+      }
+    }).observe(canvas.parentElement);
+  }
+})();
 
 // ====== Tab Switching ======
 document.querySelectorAll('.main-tabs .tab-btn').forEach(btn => {
@@ -1170,34 +1198,7 @@ function drawKline() {
   }
 }
 
-// Mouse events for K-line
-document.addEventListener('DOMContentLoaded', () => {
-  const canvas = document.getElementById('kline-canvas');
-  canvas.addEventListener('mousemove', (e) => {
-    if (!klineData) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const bars = klineData.daily_bars || klineData.minute_bars || [];
-    if (bars.length < 2) return;
-    const chartW = rect.width - 60;
-    const idx = Math.round((mx - 10) / chartW * (bars.length - 1));
-    const newIdx = Math.max(0, Math.min(bars.length - 1, idx));
-    if (newIdx !== klineHoverIdx) {
-      klineHoverIdx = newIdx;
-      drawKline();
-    }
-  });
-  canvas.addEventListener('mouseleave', () => {
-    klineHoverIdx = -1;
-    drawKline();
-  });
-  // Resize
-  new ResizeObserver(() => {
-    if (klineData && document.getElementById('kline-canvas').style.display !== 'none') {
-      drawKline();
-    }
-  }).observe(canvas.parentElement);
-});
+// K-line events are set up in setupDelegation() above
 
 async function loadSummary() {
   try {

@@ -91,10 +91,12 @@ def call_deepseek(prompt: str, api_key: str = None, base_url: str = None,
                 {"role": "user", "content": prompt},
             ],
             "max_tokens": cfg.get("max_tokens", 8192),
-            "temperature": cfg.get("temperature", 0.3),
         }
         if cfg.get("enable_thinking", False):
             json_body["thinking"] = {"type": "enabled"}
+        reasoning_effort = cfg.get("reasoning_effort", "high")
+        if reasoning_effort:
+            json_body["reasoning_effort"] = reasoning_effort
         resp = requests.post(
             f"{base_url}/chat/completions",
             headers={

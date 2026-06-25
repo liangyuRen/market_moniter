@@ -84,22 +84,25 @@ def call_deepseek(prompt: str, api_key: str = None, base_url: str = None,
 
     try:
         import requests
+        json_body = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "你是一位专业A股分析师，回复严格使用JSON格式，不要添加markdown代码块。"},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": cfg.get("max_tokens", 8192),
+            "temperature": cfg.get("temperature", 0.3),
+        }
+        if cfg.get("enable_thinking", False):
+            json_body["thinking"] = {"type": "enabled"}
         resp = requests.post(
             f"{base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "你是一位专业A股分析师，回复严格使用JSON格式，不要添加markdown代码块。"},
-                    {"role": "user", "content": prompt},
-                ],
-                "max_tokens": cfg.get("max_tokens", 2048),
-                "temperature": cfg.get("temperature", 0.3),
-            },
-            timeout=30,
+            json=json_body,
+            timeout=120,
         )
         if resp.status_code != 200:
             logger.error(f"DeepSeek API错误: {resp.status_code} {resp.text[:200]}")
@@ -296,6 +299,9 @@ def analyze_stock(code: str, name: str = "", sector: str = "综合") -> dict:
     # 回退
     if ai_result is None:
         ai_result = local_fallback_analysis(code, name or code, sector, technical, hist_summary, market_context)
+        ai_result["source"] = "local"
+    else:
+        ai_result["source"] = "deepseek"
 
     ai_result["code"] = code
     ai_result["name"] = name or code

@@ -132,11 +132,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 
 .fund-row{display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:12px}
 
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:rgba(48,54,61,0.3);border-radius:3px}
-::-webkit-scrollbar-thumb{background:#484f58;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#6e7681}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:rgba(48,54,61,0.4);border-radius:4px}
+::-webkit-scrollbar-thumb{background:#8b949e;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#c0c8d4}
 ::-webkit-scrollbar-corner{background:transparent}
+/* Firefox scrollbar */
+*{scrollbar-width:thin;scrollbar-color:#8b949e rgba(48,54,61,0.4)}
 
 .flash-up{animation:flashUp .6s ease}
 .flash-down{animation:flashDown .6s ease}
@@ -278,7 +280,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC
 <div class="tab-content" id="tab-funds">
   <div class="panel panel-left">
     <div class="section-title"><span>💵 自选股资金流向</span></div>
-    <div id="fund-flow-list" style="max-height:calc(100vh - 140px);overflow-y:auto">加载中...</div>
+    <div style="display:flex;align-items:center;padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);gap:4px">
+      <span style="width:70px">名称</span>
+      <span style="flex:1;text-align:right;padding-right:4px">主力净流入</span>
+      <span style="width:55px;text-align:right">占比</span>
+      <span style="width:55px;text-align:right">超大单</span>
+    </div>
+    <div id="fund-flow-list" style="max-height:calc(100vh - 160px);overflow-y:auto">加载中...</div>
   </div>
   <div class="panel panel-center">
     <div class="section-title"><span>🏭 行业板块异动</span></div>

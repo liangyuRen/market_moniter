@@ -7,36 +7,36 @@
 <title>盯盘Agent v0.3.1</title>
 <style>
 :root {
-  --bg-primary: #000000; --bg-secondary: #1c1c1e; --bg-card: #2c2c2e;
-  --bg-elevated: #3a3a3c; --border: rgba(255,255,255,0.08);
-  --text-primary: #f5f5f7; --text-secondary: #a1a1a6;
-  --text-muted: #6e6e73; --accent: #0a84ff;
-  --green: #30d158; --red: #ff453a; --orange: #ff9f0a;
-  --purple: #bf5af2; --teal: #64d2ff;
+  --bg-primary: #f5f5f7; --bg-secondary: #ffffff; --bg-card: #ffffff;
+  --bg-elevated: #f9f9fb; --border: rgba(0,0,0,0.06);
+  --text-primary: #1d1d1f; --text-secondary: #86868b;
+  --text-muted: #aeaeb2; --accent: #0071e3;
+  --green: #34c759; --red: #ff3b30; --orange: #ff9500;
+  --purple: #af52de; --teal: #5ac8fa;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-  --blur: saturate(180%) blur(20px);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --blur: saturate(180%) blur(30px);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;overflow:hidden;font-size:13px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
-.header{background:rgba(28,28,30,0.72);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--border);padding:0 20px;height:48px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.header{background:rgba(255,255,255,0.64);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--border);padding:0 20px;height:48px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .header-left{display:flex;align-items:center;gap:12px}
 .header-left h1{font-size:15px;font-weight:590;color:var(--text-primary);letter-spacing:-0.02em}
-.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(48,209,88,0.5)}
-.logo-dot.off{background:var(--red);box-shadow:0 0 6px rgba(255,69,58,0.5)}
-.index-bar{display:flex;gap:4px;flex:1;justify-content:center;padding:0 20px}
-.idx-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:var(--radius-sm);font-size:12px;font-variant-numeric:tabular-nums;background:rgba(255,255,255,0.04);white-space:nowrap;font-weight:500;letter-spacing:0}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(52,199,89,0.3)}
+.logo-dot.off{background:var(--red);box-shadow:0 0 6px rgba(255,59,48,0.3)}
+.index-bar{display:flex;gap:6px;flex:1;justify-content:center;padding:0 20px}
+.idx-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:var(--radius-sm);font-size:12px;font-variant-numeric:tabular-nums;background:rgba(0,0,0,0.03);white-space:nowrap;font-weight:500;letter-spacing:0}
 .idx-chip .idx-price{font-weight:600;color:var(--text-primary)}
 .idx-chip .idx-change{font-weight:500;font-size:11px}
 .header-right{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--text-secondary);letter-spacing:0}
 .stat-item{display:flex;align-items:center;gap:5px}
 .stat-val{color:var(--text-primary);font-weight:590;font-variant-numeric:tabular-nums}
 .ws-status{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:590;letter-spacing:0.02em}
-.ws-status.on{background:rgba(48,209,88,0.12);color:var(--green)}
-.ws-status.off{background:rgba(255,69,58,0.12);color:var(--red)}
+.ws-status.on{background:rgba(52,199,89,0.08);color:var(--green)}
+.ws-status.off{background:rgba(255,59,48,0.08);color:var(--red)}
 
-.main-tabs{display:flex;background:rgba(28,28,30,0.6);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--border);padding:0 16px;gap:0}
+.main-tabs{display:flex;background:rgba(255,255,255,0.6);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--border);padding:0 16px;gap:0}
 .tab-btn{flex:1;max-width:130px;text-align:center;padding:12px 8px;font-size:12px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .2s cubic-bezier(.4,0,.2,1);white-space:nowrap;font-weight:500;letter-spacing:0}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:590}
 .tab-btn:hover{color:var(--text-primary)}
@@ -51,8 +51,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 .card-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:590;color:var(--text-secondary);letter-spacing:0}
 .card-body{padding:0}
 
-.stock-row{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;transition:all .15s ease;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer}
-.stock-row:hover{background:rgba(10,132,255,0.06)}
+.stock-row{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;transition:all .15s ease;border-bottom:1px solid rgba(0,0,0,0.04);cursor:pointer}
+.stock-row:hover{background:rgba(0,113,227,0.04)}
 .stock-row .code{width:46px;font-size:10px;color:var(--text-muted);flex-shrink:0;letter-spacing:0}
 .stock-row .name{flex:1;min-width:70px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--text-primary);letter-spacing:0}
 .stock-row .price-col{width:56px;text-align:right;font-variant-numeric:tabular-nums;font-weight:590;font-size:13px;flex-shrink:0}
@@ -63,9 +63,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 .alert-feed{flex:1;overflow-y:auto;padding:10px}
 .alert-item{padding:10px 14px;margin-bottom:6px;border-radius:var(--radius-md);border-left:3px solid var(--border);background:var(--bg-card);box-shadow:var(--shadow-sm);animation:fadeIn .3s cubic-bezier(.4,0,.2,1)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.alert-item.risk{border-left-color:var(--red);background:rgba(255,69,58,0.06)}
-.alert-item.opportunity{border-left-color:var(--green);background:rgba(48,209,88,0.06)}
-.alert-item.info{border-left-color:var(--accent);background:rgba(10,132,255,0.06)}
+.alert-item.risk{border-left-color:var(--red);background:rgba(255,59,48,0.04)}
+.alert-item.opportunity{border-left-color:var(--green);background:rgba(52,199,89,0.04)}
+.alert-item.info{border-left-color:var(--accent);background:rgba(0,113,227,0.04)}
 .alert-item .alert-title{font-weight:590;font-size:13px;line-height:1.4}
 .alert-item .alert-detail{font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:4px}
 .alert-item .alert-meta{font-size:10px;color:var(--text-muted);margin-top:4px}
@@ -76,7 +76,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 .global-item .idx-price{font-size:18px;font-weight:590;margin-top:6px;font-variant-numeric:tabular-nums}
 .global-item .idx-change{font-size:13px;font-weight:590;margin-top:3px}
 
-.news-item{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;line-height:1.6;cursor:pointer;transition:background .15s}
+.news-item{padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px;line-height:1.6;cursor:pointer;transition:background .15s}
+.news-item:hover{background:rgba(0,113,227,0.04)}
+.news-source{font-size:10px;color:var(--text-muted);margin-top:3px}
+.alert-item{padding:10px 14px;margin-bottom:6px;border-radius:var(--radius-md);border-left:3px solid var(--border);background:var(--bg-card);box-shadow:var(--shadow-sm);animation:fadeIn .3s cubic-bezier(.4,0,.2,1)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert-item.risk{border-left-color:var(--red);background:rgba(255,59,48,0.04)}
+.alert-item.opportunity{border-left-color:var(--green);background:rgba(52,199,89,0.04)}
+.alert-item.info{border-left-color:var(--accent);background:rgba(0,113,227,0.04)}
+.alert-item .alert-title{font-weight:590;font-size:13px;line-height:1.4}
+.alert-item .alert-detail{font-size:12px;color:var(--text-secondary);line-height:1.6;margin-top:4px}
+.alert-item .alert-meta{font-size:10px;color:var(--text-muted);margin-top:4px}
+
+.global-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+.global-item{background:var(--bg-card);padding:12px 14px;border-radius:var(--radius-md);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.global-item .idx-name{font-size:11px;color:var(--text-secondary);font-weight:500}
+.global-item .idx-price{font-size:18px;font-weight:590;margin-top:6px;font-variant-numeric:tabular-nums}
+.global-item .idx-change{font-size:13px;font-weight:590;margin-top:3px}
+
+.news-item{padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px;line-height:1.6;cursor:pointer;transition:background .15s}
 .news-item:hover{background:rgba(10,132,255,0.04)}
 .news-source{font-size:10px;color:var(--text-muted);margin-top:3px}
 
@@ -88,13 +106,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 .stat-box .lbl{font-size:11px;color:var(--text-muted);margin-top:4px;letter-spacing:0}
 
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;margin-right:4px}
-.badge-risk{background:rgba(255,69,58,0.12);color:var(--red)}
-.badge-opp{background:rgba(48,209,88,0.12);color:var(--green)}
-.badge-info{background:rgba(10,132,255,0.12);color:var(--accent)}
-.badge-buy{background:rgba(48,209,88,0.12);color:var(--green)}
-.badge-sell{background:rgba(255,69,58,0.12);color:var(--red)}
+.badge-risk{background:rgba(255,59,48,0.08);color:var(--red)}
+.badge-opp{background:rgba(52,199,89,0.08);color:var(--green)}
+.badge-info{background:rgba(0,113,227,0.08);color:var(--accent)}
+.badge-buy{background:rgba(52,199,89,0.08);color:var(--green)}
+.badge-sell{background:rgba(255,59,48,0.08);color:var(--red)}
 
-.signal-row{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.signal-row{padding:9px 14px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px}
 .signal-row .sig-title{font-weight:590}
 .signal-row .sig-reason{color:var(--text-secondary);margin-top:3px}
 .signal-row .sig-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
@@ -105,50 +123,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
 .summary-block .factor.bullish{color:var(--red);font-weight:500}
 .summary-block .factor.bearish{color:var(--green);font-weight:500}
 
-/* AI Panel — Apple style */
+/* AI Panel — Apple light */
 .ai-trend{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:590}
-.ai-trend.bullish{background:rgba(255,69,58,0.1);color:var(--red)}
-.ai-trend.bearish{background:rgba(48,209,88,0.1);color:var(--green)}
-.ai-trend.neutral{background:rgba(255,159,10,0.1);color:var(--orange)}
+.ai-trend.bullish{background:rgba(255,59,48,0.08);color:var(--red)}
+.ai-trend.bearish{background:rgba(52,199,89,0.08);color:var(--green)}
+.ai-trend.neutral{background:rgba(255,149,0,0.08);color:var(--orange)}
 .ai-confidence{font-size:11px;color:var(--text-secondary)}
 .ai-confidence .bar{display:inline-block;height:3px;border-radius:2px;margin-left:4px;vertical-align:middle}
 .ai-advice{display:inline-flex;align-items:center;gap:5px;padding:8px 18px;border-radius:var(--radius-md);font-size:15px;font-weight:590}
-.ai-advice.buy{background:rgba(255,69,58,0.08);color:var(--red);border:1px solid rgba(255,69,58,0.2)}
-.ai-advice.sell{background:rgba(48,209,88,0.08);color:var(--green);border:1px solid rgba(48,209,88,0.2)}
-.ai-advice.hold{background:rgba(255,159,10,0.08);color:var(--orange);border:1px solid rgba(255,159,10,0.2)}
-.ai-advice.wait{background:rgba(110,110,115,0.08);color:var(--text-muted);border:1px solid rgba(255,255,255,0.08)}
-.ai-sr-row{display:flex;justify-content:space-between;padding:5px 8px;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.ai-advice.buy{background:rgba(255,59,48,0.06);color:var(--red);border:1px solid rgba(255,59,48,0.15)}
+.ai-advice.sell{background:rgba(52,199,89,0.06);color:var(--green);border:1px solid rgba(52,199,89,0.15)}
+.ai-advice.hold{background:rgba(255,149,0,0.06);color:var(--orange);border:1px solid rgba(255,149,0,0.15)}
+.ai-advice.wait{background:rgba(0,0,0,0.03);color:var(--text-muted);border:1px solid rgba(0,0,0,0.06)}
+.ai-sr-row{display:flex;justify-content:space-between;padding:5px 8px;font-size:11px;border-bottom:1px solid rgba(0,0,0,0.04)}
 .ai-sr-row .sr-price{font-weight:590;font-variant-numeric:tabular-nums}
 .ai-factor{font-size:11px;padding:3px 8px;line-height:1.6;display:flex;gap:5px}
 .ai-factor::before{content:'\2022';flex-shrink:0;font-size:14px}
 .ai-factor.risk{color:var(--red)}
 .ai-factor.bull{color:var(--green)}
-.ai-summary{font-size:12px;line-height:1.6;padding:10px 12px;background:rgba(10,132,255,0.04);border-radius:var(--radius-sm);border-left:2px solid var(--accent)}
+.ai-summary{font-size:12px;line-height:1.6;padding:10px 12px;background:rgba(0,113,227,0.03);border-radius:var(--radius-sm);border-left:2px solid var(--accent)}
 .risk-level{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:590;letter-spacing:0.02em}
-.risk-level.low{background:rgba(48,209,88,0.1);color:var(--green)}
-.risk-level.medium{background:rgba(255,159,10,0.1);color:var(--orange)}
-.risk-level.high{background:rgba(255,69,58,0.1);color:var(--red)}
-.risk-level.critical{background:rgba(255,69,58,0.2);color:var(--red)}
+.risk-level.low{background:rgba(52,199,89,0.08);color:var(--green)}
+.risk-level.medium{background:rgba(255,149,0,0.08);color:var(--orange)}
+.risk-level.high{background:rgba(255,59,48,0.08);color:var(--red)}
+.risk-level.critical{background:rgba(255,59,48,0.15);color:var(--red)}
 .sentiment-gauge-bar{position:relative;height:6px;border-radius:3px;margin:8px 0;background:linear-gradient(to right,var(--green),var(--orange),var(--red))}
-.sentiment-gauge-bar .marker{position:absolute;top:-5px;width:2px;height:16px;border-radius:1px;background:var(--text-primary);transform:translateX(-50%);box-shadow:0 0 4px rgba(255,255,255,0.3)}
+.sentiment-gauge-bar .marker{position:absolute;top:-5px;width:2px;height:16px;border-radius:1px;background:var(--text-primary);transform:translateX(-50%);box-shadow:0 0 2px rgba(0,0,0,0.15)}
 
 .sentiment-card{text-align:center;padding:16px}
 .sentiment-card .score{font-size:36px;font-weight:590;letter-spacing:-0.03em}
 .sentiment-card .label{font-size:12px;color:var(--text-secondary);margin-top:6px}
 
-.fund-row{display:flex;justify-content:space-between;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px}
+.fund-row{display:flex;justify-content:space-between;padding:7px 14px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px}
 
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.28)}
 ::-webkit-scrollbar-corner{background:transparent}
-*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.12) transparent}
+*{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.12) transparent}
 
 .flash-up{animation:flashUp .6s cubic-bezier(.4,0,.2,1)}
 .flash-down{animation:flashDown .6s cubic-bezier(.4,0,.2,1)}
-@keyframes flashUp{0%{background:rgba(255,69,58,0.2)}100%{background:transparent}}
-@keyframes flashDown{0%{background:rgba(48,209,88,0.2)}100%{background:transparent}}
+@keyframes flashUp{0%{background:rgba(255,59,48,0.15)}100%{background:transparent}}
+@keyframes flashDown{0%{background:rgba(52,199,89,0.15)}100%{background:transparent}}
 
 .tab-content{display:none;flex-direction:column;height:100%}
 .tab-content.active{display:flex}
@@ -217,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','PingFang SC'
         <div class="stat-box"><div class="val" id="st-flat" style="color:var(--text-muted)">0</div><div class="lbl">平盘</div></div>
       </div>
     </div>
-    <div style="display:flex;padding:3px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+    <div style="display:flex;padding:3px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02)">
       <span style="width:46px">代码</span>
       <span style="flex:1;min-width:70px">名称</span>
       <span style="width:56px;text-align:right">现价</span>
@@ -681,7 +699,7 @@ async function loadFunds() {
       return;
     }
     // Header
-    let html = `<div style="display:flex;padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+    let html = `<div style="display:flex;padding:4px 10px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02)">
       <span style="width:70px">股票</span><span style="flex:1;text-align:right">主力净流入</span><span style="width:55px;text-align:right">占比</span><span style="width:55px;text-align:right">超大单</span>
     </div>`;
     const maxFlow = Math.max(...flows.map(f => Math.abs(f.main_net_inflow || 0)), 1);
@@ -694,7 +712,7 @@ async function loadFunds() {
       const sign = isPositive ? '+' : '';
       const barW = Math.min(100, Math.abs(flow) / maxFlow * 100);
       const barColor = isPositive ? 'rgba(255,69,58,0.45)' : 'rgba(48,209,88,0.45)';
-      html += `<div class="fund-row" style="display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:12px;gap:4px">
+      html += `<div class="fund-row" style="display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px;gap:4px">
         <span style="width:70px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name||f.code}</span>
         <span style="flex:1;position:relative;height:16px;text-align:right;line-height:16px;font-variant-numeric:tabular-nums;z-index:1;padding-right:4px">
           <span style="position:absolute;right:0;top:0;bottom:0;background:${barColor};width:${barW}%;border-radius:2px;z-index:-1"></span>
@@ -733,7 +751,7 @@ async function loadSignals() {
       document.getElementById('signals-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center">暂无策略信号<br><small>交易时段自动分析技术指标</small></div>';
       return;
     }
-    let html = `<div style="display:flex;padding:4px 8px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+    let html = `<div style="display:flex;padding:4px 8px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02)">
       <span style="width:44px">方向</span><span style="width:64px">股票</span><span style="flex:1">策略/原因</span><span style="width:40px;text-align:right">强度</span><span style="width:52px;text-align:right">价格</span>
     </div>`;
     const strengthColors = {strong:'var(--red)',medium:'var(--orange)',weak:'var(--text-muted)'};
@@ -741,7 +759,7 @@ async function loadSignals() {
       const isBuy = s.signal_type === 'buy';
       const typeLabel = isBuy ? '买入' : s.signal_type === 'sell' ? '卖出' : '持有';
       const typeCls = isBuy ? 'up' : s.signal_type === 'sell' ? 'down' : '';
-      html += `<div class="signal-row" style="display:flex;align-items:center;padding:5px 8px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:11px;gap:2px">
+      html += `<div class="signal-row" style="display:flex;align-items:center;padding:5px 8px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:11px;gap:2px">
         <span class="${typeCls}" style="width:44px;font-weight:700">${typeLabel}</span>
         <span style="width:64px;font-weight:600">${(s.stock_name||s.stock_code).substring(0,5)}</span>
         <span style="flex:1">${s.strategy||''}<br><span style="font-size:10px;color:var(--text-muted)">${(s.reason||'').substring(0,40)}</span></span>
@@ -957,11 +975,11 @@ function drawKline() {
   const yPos = (p) => pad.top + (high - p) * yScale;
 
   // Clear
-  ctx.fillStyle = '#1c1c1e';
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, w, h);
 
   // Grid lines
-  ctx.strokeStyle = 'rgba(48,54,61,0.4)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
   ctx.lineWidth = 0.5;
   const gridLines = 5;
   for (let i = 0; i <= gridLines; i++) {
@@ -972,7 +990,7 @@ function drawKline() {
     ctx.stroke();
     // Price label
     const p = high - (priceRange / gridLines) * i;
-    ctx.fillStyle = '#7d8590';
+    ctx.fillStyle = '#aeaeb2';
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(p.toFixed(2), w - 2, y + 3);
@@ -980,7 +998,7 @@ function drawKline() {
 
   // MA lines
   const mas = [5, 10, 20];
-  const maColors = ['#e6edf3', '#e3b341', '#bc8cff'];
+  const maColors = ['#1d1d1f', '#ff9500', '#af52de'];
   for (let mi = 0; mi < mas.length; mi++) {
     const period = mas[mi];
     if (allBars.length < period) continue;
@@ -1024,10 +1042,10 @@ function drawKline() {
     // Body
     const bodyTop = Math.min(openY, closeY);
     const bodyH = Math.max(1, Math.abs(closeY - openY));
-    ctx.fillStyle = isUp ? '#ff453a' : (b.open === b.close ? '#7d8590' : '#30d158');
+    ctx.fillStyle = isUp ? '#ff3b30' : (b.open === b.close ? '#aeaeb2' : '#34c759');
     ctx.fillRect(x - barW / 2, bodyTop, barW, bodyH);
     if (!isUp && b.open === b.close) {
-      ctx.strokeStyle = '#7d8590';
+      ctx.strokeStyle = '#aeaeb2';
       ctx.strokeRect(x - barW / 2, bodyTop, barW, bodyH);
     }
 
@@ -1040,7 +1058,7 @@ function drawKline() {
   }
 
   // Volume label
-  ctx.fillStyle = '#7d8590';
+  ctx.fillStyle = '#aeaeb2';
   ctx.font = '9px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('VOL', pad.left + 2, pad.top + priceH + 10);
@@ -1070,7 +1088,7 @@ function drawKline() {
       const sentMin = 0, sentMax = 100;
 
       // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillStyle = 'rgba(0,0,0,0.03)';
       ctx.fillRect(pad.left, sentTop, chartW, sentH);
 
       // Gradient fill under the line
@@ -1078,7 +1096,7 @@ function drawKline() {
       const firstX = xPos(sentPoints[0].barIdx);
 
       // Draw guideline
-      ctx.strokeStyle = 'rgba(125,133,144,0.4)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
       ctx.lineWidth = 0.5;
       ctx.setLineDash([2, 4]);
       const midY = sentTop + sentH / 2;
@@ -1089,7 +1107,7 @@ function drawKline() {
       ctx.setLineDash([]);
 
       // Draw sentiment line
-      ctx.strokeStyle = '#bc8cff';
+      ctx.strokeStyle = '#af52de';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       let first = true;
@@ -1117,7 +1135,7 @@ function drawKline() {
       ctx.fillText('情绪:' + (lastP.label||''), pad.left + chartW, sentTop + 10);
 
       // Sentiment label
-      ctx.fillStyle = '#7d8590';
+      ctx.fillStyle = '#aeaeb2';
       ctx.font = '8px monospace';
       ctx.textAlign = 'left';
       ctx.fillText('SENT', pad.left + 2, sentTop + 10);
@@ -1128,7 +1146,7 @@ function drawKline() {
   if (klineHoverIdx >= 0 && klineHoverIdx < allBars.length) {
     const b = allBars[klineHoverIdx];
     const x = xPos(klineHoverIdx);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
     ctx.lineWidth = 0.5;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
@@ -1144,9 +1162,9 @@ function drawKline() {
     const tw = ctx.measureText(tipText).width + 12;
     const tx = Math.min(x - tw / 2, w - tw - 5);
     const ty = pad.top + 2;
-    ctx.fillStyle = 'rgba(28,28,30,0.92)';
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
     ctx.fillRect(Math.max(0, tx), ty, tw, 20);
-    ctx.fillStyle = '#e6edf3';
+    ctx.fillStyle = '#1d1d1f';
     ctx.textAlign = 'left';
     ctx.fillText(tipText, Math.max(2, tx + 6), ty + 14);
   }
@@ -1329,7 +1347,7 @@ async function loadBacktestHistory(filterCode) {
       return;
     }
     const sortArrow = (k) => btSortKey === k ? (btSortDir > 0 ? ' ↑' : ' ↓') : '';
-    let html = `<div style="font-size:10px;color:var(--text-muted);display:flex;padding:3px 6px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+    let html = `<div style="font-size:10px;color:var(--text-muted);display:flex;padding:3px 6px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.02)">
       <span style="width:62px;cursor:pointer" onclick="sortBacktestResults('code')">代码${sortArrow('code')}</span>
       <span style="width:70px;cursor:pointer" onclick="sortBacktestResults('strategy')">策略${sortArrow('strategy')}</span>
       <span style="flex:1;text-align:right;cursor:pointer" onclick="sortBacktestResults('total_return')">收益${sortArrow('total_return')}</span>
@@ -1340,7 +1358,7 @@ async function loadBacktestHistory(filterCode) {
       const cls = r.total_return > 0 ? 'up' : 'down';
       const sign = r.total_return > 0 ? '+' : '';
       const sname = r.strategy ? r.strategy.replace('_',' ') : '';
-      html += `<div style="display:flex;padding:4px 6px;border-bottom:1px solid rgba(37,43,54,0.5);font-size:11px;cursor:pointer;align-items:center" onclick="loadBacktestResult('${r.code}','${r.strategy}','${r.backtest_date}')">
+      html += `<div style="display:flex;padding:4px 6px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:11px;cursor:pointer;align-items:center" onclick="loadBacktestResult('${r.code}','${r.strategy}','${r.backtest_date}')">
         <span style="width:62px;font-weight:600">${r.code}</span>
         <span style="width:70px;font-size:10px;color:var(--text-muted)">${sname}</span>
         <span class="${cls}" style="flex:1;text-align:right;font-weight:700">${sign}${r.total_return}%</span>
